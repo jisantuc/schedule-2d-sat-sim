@@ -23,8 +23,8 @@ jobs:
       - name: Generate coverage report
         uses: 8c6794b6/hpc-codecov-action@v4
         with:
-          target: cabal:interval-index-test
+          target: cabal:schedule-2d-sat-sim-test
           excludes: |
-            Test.IntervalIndexSpec,Test.IntervalSpec
+            SatSim.TargetVectorSpec
       - name: Send coverage report
         uses: codecov/codecov-action@v5
