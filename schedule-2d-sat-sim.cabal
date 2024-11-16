@@ -15,7 +15,6 @@ common warnings
 library
   import: warnings
   exposed-modules:
-    Lib
     SatSim.Quantities
     SatSim.Satellite
     SatSim.State
