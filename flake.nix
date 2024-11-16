@@ -26,6 +26,12 @@
             nativeBuildInputs = devDependencies;
             withHoogle = true;
           };
+          devShells.ci = haskellPackages.shellFor {
+            packages = ps: [ (ps.callCabal2nix "schedule-2d-sat-sim" ./. { }) ];
+            nativeBuildInputs = with haskellPackages; [
+              cabal-install
+            ];
+          };
 
           packages.default = haskellPackages.callCabal2nix "schedule-2d-sat-sim" ./. { };
         }
