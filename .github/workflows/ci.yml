@@ -1,0 +1,32 @@
+name: CI
+on:
+  push:
+    branches:
+      main
+  pull_request:
+jobs:
+  flake-build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: "write"
+      contents: "read"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nixbuild/nix-quick-install-action@v29
+        with:
+          nix_conf: |
+            experimental-features = nix-command flakes
+            trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
+            substituters = https://cache.iog.io
+      - uses: DeterminateSystems/magic-nix-cache-action@v8
+      - run: nix develop --command ./scripts/test
+      - name: Generate coverage report
+        uses: 8c6794b6/hpc-codecov-action@v4
+        with:
+          target: cabal:interval-index-test
+          excludes: |
+            Test.IntervalIndexSpec,Test.IntervalSpec
+      - name: Send coverage report
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
