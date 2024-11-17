@@ -59,3 +59,4 @@ test-suite schedule-2d-sat-sim-test
     hspec,
     interval-index,
     schedule-2d-sat-sim,
+    time
