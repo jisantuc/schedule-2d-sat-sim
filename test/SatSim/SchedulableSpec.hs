@@ -11,7 +11,7 @@ import SatSim.Schedulable
     scheduleAt,
   )
 import SatSim.TargetVector (mkTargetVector)
-import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
+import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy, xit)
 
 spec :: Spec
 spec = describe "SchedulableSpec" $ do
@@ -41,3 +41,4 @@ spec = describe "SchedulableSpec" $ do
      in do
           duration scheduled1 - (1 + 8) `shouldSatisfy` (<= tolerance)
           duration scheduled2 - (1 + 4) `shouldSatisfy` (<= tolerance)
+  xit "accumulates appropriate errors for strict scheduling" $ True `shouldBe` False

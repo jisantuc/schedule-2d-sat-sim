@@ -13,6 +13,7 @@ newtype Radians = Radians {unRadians :: Float}
     ( Eq,
       Fractional,
       Num,
+      Ord,
       Show,
       ToJSON,
       FromJSON
