@@ -33,7 +33,6 @@
             packages = ps: [ (ps.callCabal2nix "schedule-2d-sat-sim" ./. { }) ];
             nativeBuildInputs = with haskellPackages; [
               cabal-install
-              interval-index
             ];
           };
 
