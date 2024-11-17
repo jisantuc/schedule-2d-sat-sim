@@ -24,7 +24,7 @@ library
   build-depends:
     base ^>=4.18,
     aeson,
-    intervalindex,
+    interval-index,
     time,
 
   hs-source-dirs: src
@@ -48,6 +48,7 @@ test-suite schedule-2d-sat-sim-test
   default-language: Haskell2010
   other-modules:
     SatSim.TargetVectorSpec
+    SatSim.SchedulableSpec
 
   type: exitcode-stdio-1.0
   hs-source-dirs: test
@@ -56,4 +57,5 @@ test-suite schedule-2d-sat-sim-test
     QuickCheck,
     base ^>=4.18,
     hspec,
+    interval-index,
     schedule-2d-sat-sim,
