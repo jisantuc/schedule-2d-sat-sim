@@ -20,8 +20,11 @@ Advent of Code could tell me otherwise.
 For now, I'm ignoring other real life operational concerns, e.g.:
 
 * the simulated satellite has infinite storage and it never has to send the data to the ground;
-* the sun doesn't exist, and the simulated satellite has infinite battery; and
-* we can talk to the satellite at any time if we want to tell it about a new schedule.
+* the sun doesn't exist, and the simulated satellite has infinite battery;
+* we can talk to the satellite at any time if we want to tell it about a new schedule; and
+* we have perfect knowledge about the future of where the satellite will be, since it's a point in the middle of a
+  circle instead of zooming through space at a high speed dealing with atmospheric drag and potential collisions with
+  other satellites.
 
 The 2d satellite initially points at the unit vector (1, 0). Tasks arrive at random times with random valid intervals
 sometime in the future.
