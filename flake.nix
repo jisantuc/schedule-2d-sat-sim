@@ -1,16 +1,19 @@
 {
   inputs = {
+    intervalIndex.url = "github:jisantuc/interval-index";
     nixpkgs.url = "nixpkgs/nixos-24.05";
     utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { nixpkgs, utils, ... }:
+  outputs = { intervalIndex, nixpkgs, utils, ... }:
     utils.lib.eachSystem [ "x86_64-linux" "x86_64-darwin" "aarch64-darwin" ]
       (system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
           compiler = "ghc96";
-          haskellPackages = pkgs.haskell.packages.${compiler};
+          haskellPackages = pkgs.haskell.packages.${compiler}.extend (final: prev: {
+            interval-index = intervalIndex.packages.${system}.default;
+          });
           devDependencies = with haskellPackages; [
             cabal-fmt
             cabal-gild
