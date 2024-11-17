@@ -26,5 +26,6 @@ jobs:
           target: cabal:schedule-2d-sat-sim-test
           excludes: |
             SatSim.TargetVectorSpec
+            SatSim.SchedulableSpec
       - name: Send coverage report
         uses: codecov/codecov-action@v5
