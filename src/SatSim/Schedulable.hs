@@ -6,9 +6,10 @@
 module SatSim.Schedulable
   ( Schedulable (..),
     Scheduled (..),
+    ScheduleError (..),
     duration,
+    unsafeScheduleAt,
     scheduleAt,
-    strictScheduleAt,
   )
 where
 
@@ -47,23 +48,24 @@ instance Interval UTCTime Scheduled where
 data ScheduleError
   = PointingOutOfBounds
   | StartTimeOutOfBounds
+  deriving (Eq, Show)
+
+unsafeScheduleAt ::
+  Schedulable ->
+  TargetVector ->
+  UTCTime ->
+  IntervalIndex UTCTime Scheduled ->
+  IntervalIndex UTCTime Scheduled
+unsafeScheduleAt constraints pointing start schedule =
+  schedule `insert` Scheduled constraints start pointing
 
 scheduleAt ::
   Schedulable ->
   TargetVector ->
   UTCTime ->
   IntervalIndex UTCTime Scheduled ->
-  IntervalIndex UTCTime Scheduled
-scheduleAt constraints pointing start schedule =
-  schedule `insert` Scheduled constraints start pointing
-
-strictScheduleAt ::
-  Schedulable ->
-  TargetVector ->
-  UTCTime ->
-  IntervalIndex UTCTime Scheduled ->
   Validation [ScheduleError] (IntervalIndex UTCTime Scheduled)
-strictScheduleAt constraints pointing start schedule = do
+scheduleAt constraints pointing start schedule = do
   validate
     [PointingOutOfBounds]
     ( \constr ->
@@ -80,7 +82,7 @@ strictScheduleAt constraints pointing start schedule = do
           else Just ()
     )
     constraints
-  pure $ scheduleAt constraints pointing start schedule
+  pure $ unsafeScheduleAt constraints pointing start schedule
 
 duration :: Scheduled -> NominalDiffTime
 duration (Scheduled {constraints, pointing}) =
