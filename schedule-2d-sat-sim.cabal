@@ -17,11 +17,16 @@ library
   exposed-modules:
     SatSim.Quantities
     SatSim.Satellite
+    SatSim.Schedulable
     SatSim.State
     SatSim.TargetVector
 
   build-depends:
-    base ^>=4.18
+    base ^>=4.18,
+    aeson,
+    interval-index,
+    time,
+    validation
 
   hs-source-dirs: src
   default-language: Haskell2010
@@ -44,12 +49,16 @@ test-suite schedule-2d-sat-sim-test
   default-language: Haskell2010
   other-modules:
     SatSim.TargetVectorSpec
+    SatSim.SchedulableSpec
 
   type: exitcode-stdio-1.0
   hs-source-dirs: test
   main-is: Spec.hs
   build-depends:
+    QuickCheck,
     base ^>=4.18,
     hspec,
-    QuickCheck,
+    interval-index,
     schedule-2d-sat-sim,
+    time,
+    validation

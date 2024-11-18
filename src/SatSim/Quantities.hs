@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DerivingVia #-}
 
 module SatSim.Quantities
   ( Radians (..),
@@ -6,6 +6,26 @@ module SatSim.Quantities
   )
 where
 
-newtype Radians = Radians Float deriving (Eq, Fractional, Num, Show)
+import Data.Aeson (FromJSON, ToJSON)
 
-newtype Seconds = Seconds Float deriving (Eq, Num, Show)
+newtype Radians = Radians {unRadians :: Float}
+  deriving
+    ( Eq,
+      Fractional,
+      Num,
+      Ord,
+      Show,
+      ToJSON,
+      FromJSON
+    )
+    via Float
+
+newtype Seconds = Seconds {unSeconds :: Float}
+  deriving
+    ( Eq,
+      Num,
+      Show,
+      ToJSON,
+      FromJSON
+    )
+    via Float

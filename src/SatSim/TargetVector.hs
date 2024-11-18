@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module SatSim.TargetVector
   ( TargetVector,
     mkTargetVector,
@@ -7,9 +9,15 @@ module SatSim.TargetVector
   )
 where
 
+import Data.Aeson (FromJSON, ToJSON)
+import GHC.Generics (Generic)
 import SatSim.Quantities (Radians (..), Seconds (..))
 
-newtype TargetVector = TargetVector (Float, Float) deriving (Eq, Show)
+newtype TargetVector = TargetVector (Float, Float) deriving (Eq, Generic, Show)
+
+instance ToJSON TargetVector
+
+instance FromJSON TargetVector
 
 magnitude :: TargetVector -> Float
 magnitude v =
