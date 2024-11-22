@@ -1,6 +1,8 @@
 `schedule-sim`
 =====
 
+[![codecov](https://codecov.io/gh/jisantuc/schedule-2d-sat-sim/graph/badge.svg?token=RGEx8tVyCY)](https://codecov.io/gh/jisantuc/schedule-2d-sat-sim)
+
 This project holds simulation code for scheduling imagery collection on imaginary 2d satellites with targets located
 some number of radians rotation along the unit circle.
 
