@@ -9,7 +9,6 @@ import Data.IntervalIndex (IntervalIndex)
 import qualified Data.IntervalIndex as IntervalIndex
 import Data.Time (UTCTime)
 import Database.Redis (Connection, get, runRedis, set)
-import Debug.Trace (traceShow)
 import SatSim.Schedulable (Scheduled)
 
 newtype ScheduleId = ScheduleId String
@@ -17,7 +16,7 @@ newtype ScheduleId = ScheduleId String
 intervalIndexFromByteString :: BS.ByteString -> Maybe (IntervalIndex UTCTime Scheduled)
 intervalIndexFromByteString bs = case eitherDecodeStrict' bs of
   Right v -> Just $ IntervalIndex.fromList v
-  Left e -> traceShow e Nothing
+  Left _ -> Nothing
 
 scheduleIdKey :: ScheduleId -> BS.ByteString
 scheduleIdKey (ScheduleId i) = pack i
@@ -27,7 +26,7 @@ readSchedule conn scheduleId =
   runRedis conn $ do
     scheduledOps <- get (scheduleIdKey scheduleId)
     pure $ case scheduledOps of
-      Left err -> traceShow err Nothing
+      Left _ -> Nothing
       Right v -> v >>= intervalIndexFromByteString
 
 writeSchedule ::
