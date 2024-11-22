@@ -10,6 +10,11 @@ jobs:
     permissions:
       id-token: "write"
       contents: "read"
+    services:
+      redis:
+        image: redis:7
+        ports: 
+          - 6379:6379
     steps:
       - uses: actions/checkout@v4
       - uses: nixbuild/nix-quick-install-action@v29
@@ -27,5 +32,6 @@ jobs:
           excludes: |
             SatSim.TargetVectorSpec
             SatSim.SchedulableSpec
+            SatSim.CacheSpec
       - name: Send coverage report
         uses: codecov/codecov-action@v5

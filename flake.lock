@@ -6,11 +6,11 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1731806618,
-        "narHash": "sha256-ZO8X95EwpelJ87n9NG1mgL7beAkeN4iYculRbo0syso=",
+        "lastModified": 1732077827,
+        "narHash": "sha256-aoyyDnlxk8lfAFTlkMeGA/YVNWtzFY0+5PBNcfKoYxo=",
         "owner": "jisantuc",
         "repo": "interval-index",
-        "rev": "48b23792ce780a5c7610382dbcd9445bb7b052ac",
+        "rev": "f8883885beb8c04771fecd1cc97532b9516c6273",
         "type": "github"
       },
       "original": {
