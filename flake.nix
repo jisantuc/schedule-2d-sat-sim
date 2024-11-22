@@ -21,7 +21,9 @@
             haskell-language-server
             hlint
             ormolu
-          ];
+          ] ++ (with pkgs; [
+            redis
+          ]);
         in
         {
           devShells.default = haskellPackages.shellFor {

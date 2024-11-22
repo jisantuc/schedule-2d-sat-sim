@@ -41,6 +41,10 @@ data Scheduled = Scheduled
   }
   deriving (Eq, Show, Generic)
 
+instance ToJSON Scheduled
+
+instance FromJSON Scheduled
+
 instance Interval UTCTime Scheduled where
   intervalStart = start
   intervalEnd scheduled@(Scheduled {start}) = addUTCTime (duration scheduled) start
