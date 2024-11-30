@@ -1,0 +1,50 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
+module SatSim.Algo.Greedy where
+
+import Data.Interval (IntervalLit (..))
+import Data.IntervalIndex (IntervalIndex, touching)
+import Data.List (sortOn)
+import Data.Time (UTCTime)
+import Data.Time.Clock (addUTCTime)
+import Data.Validation (Validation (..))
+import SatSim.Satellite (Satellite (..), completeCircleTime, rotationRate)
+import SatSim.Schedulable (Schedulable (..), ScheduleError (PointingOutOfBounds), Scheduled (..), scheduleAt)
+import SatSim.TargetVector (travelTime)
+
+scheduleOne :: Satellite -> Schedulable -> IntervalIndex UTCTime Scheduled -> Validation [ScheduleError] (IntervalIndex UTCTime Scheduled)
+scheduleOne satellite schedulable@(Schedulable {vector, startCollectAfter, startCollectBefore}) existingSchedule =
+  let halfCircleTime = completeCircleTime satellite / 2
+      nearbySchedule =
+        existingSchedule
+          `touching` IntervalLit
+            ((negate . realToFrac $ halfCircleTime) `addUTCTime` startCollectAfter)
+            (realToFrac halfCircleTime `addUTCTime` startCollectBefore)
+   in case nearbySchedule of
+        [] -> Success existingSchedule
+        [scheduled@(Scheduled _ start pointing)] -> case compare start startCollectAfter of
+          EQ ->
+            scheduleAt
+              schedulable
+              vector
+              (addUTCTime (realToFrac (travelTime (rotationRate satellite) pointing vector)) start)
+              existingSchedule
+          GT ->
+            -- schedule beforehand _or_ schedule after
+            undefined
+          LT ->
+            -- schedule at max of arrival time or at beginning
+            undefined
+        schedule -> Failure [PointingOutOfBounds]
+
+scheduleOn :: Satellite -> [Schedulable] -> IntervalIndex UTCTime Scheduled -> IntervalIndex UTCTime Scheduled
+scheduleOn satellite candidates existingSchedule =
+  let sortedCandidates = sortOn arrivalOrder candidates
+      scheduleOneCandidate (Schedulable {vector, closeEnough, startCollectAfter, startCollectBefore}) =
+        -- find ops from completeCircleTime / 2 before the candidate to completeCircleTime / 2 after the candidate
+        -- from the latest one before, see if it's possible to get to the candidate from the end of it, then get to
+        -- the next op after the candidate ends
+        -- if it is, schedule the candidate at that time
+        -- if it's not, keep going
+        undefined
+   in undefined
