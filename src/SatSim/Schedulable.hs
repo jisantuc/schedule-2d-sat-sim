@@ -26,7 +26,8 @@ data Schedulable = Schedulable
   { vector :: TargetVector,
     closeEnough :: Radians,
     startCollectAfter :: UTCTime,
-    startCollectBefore :: UTCTime
+    startCollectBefore :: UTCTime,
+    arrivalOrder :: Int
   }
   deriving (Eq, Show, Generic)
 

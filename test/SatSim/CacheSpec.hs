@@ -25,7 +25,7 @@ genSchedulable = do
   tolerance <- Radians <$> arbitrary
   open <- arbitrary
   close <- (`addUTCTime` open) . fromRational <$> arbitrary
-  pure $ Schedulable target tolerance open close
+  pure $ Schedulable target tolerance open close 1
 
 genScheduled :: Gen Scheduled
 genScheduled =

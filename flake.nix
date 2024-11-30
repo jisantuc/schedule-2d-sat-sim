@@ -10,7 +10,7 @@
       (system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
-          compiler = "ghc96";
+          compiler = "ghc98";
           haskellPackages = pkgs.haskell.packages.${compiler}.extend (final: prev: {
             interval-index = interval-index.packages.${system}.default;
           });
