@@ -1,6 +1,11 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module SatSim.Satellite (Satellite(..), completeCircleTime) where
+module SatSim.Satellite
+  ( Satellite (..),
+    completeCircleTime,
+    rotationRate,
+  )
+where
 
 import SatSim.Quantities (Radians (..), Seconds (..))
 
@@ -15,3 +20,7 @@ data Satellite = SimpleSatellite
 completeCircleTime :: Satellite -> Seconds
 completeCircleTime (SimpleSatellite {rotationRatePerSecond}) =
   Seconds (2 * pi / unRadians rotationRatePerSecond)
+
+rotationRate :: Satellite -> Radians
+rotationRate (SimpleSatellite {rotationRatePerSecond}) =
+  rotationRatePerSecond

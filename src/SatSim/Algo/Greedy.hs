@@ -7,21 +7,35 @@ import Data.IntervalIndex (IntervalIndex, touching)
 import Data.List (sortOn)
 import Data.Time (UTCTime)
 import Data.Time.Clock (addUTCTime)
-import Data.Validation (Validation)
-import SatSim.Satellite (Satellite (..), completeCircleTime)
-import SatSim.Schedulable (Schedulable (..), ScheduleError, Scheduled, scheduleAt)
+import Data.Validation (Validation (..))
+import SatSim.Satellite (Satellite (..), completeCircleTime, rotationRate)
+import SatSim.Schedulable (Schedulable (..), ScheduleError (PointingOutOfBounds), Scheduled (..), scheduleAt)
+import SatSim.TargetVector (travelTime)
 
 scheduleOne :: Satellite -> Schedulable -> IntervalIndex UTCTime Scheduled -> Validation [ScheduleError] (IntervalIndex UTCTime Scheduled)
 scheduleOne satellite schedulable@(Schedulable {vector, startCollectAfter, startCollectBefore}) existingSchedule =
   let halfCircleTime = completeCircleTime satellite / 2
       nearbySchedule =
         existingSchedule
-          `touching` ( IntervalLit
-                         { start = (negate . realToFrac $ halfCircleTime) `addUTCTime` startCollectAfter,
-                           end = realToFrac halfCircleTime `addUTCTime` startCollectBefore
-                         }
-                     )
-   in if null nearbySchedule then scheduleAt schedulable vector startCollectAfter existingSchedule else undefined
+          `touching` IntervalLit
+            ((negate . realToFrac $ halfCircleTime) `addUTCTime` startCollectAfter)
+            (realToFrac halfCircleTime `addUTCTime` startCollectBefore)
+   in case nearbySchedule of
+        [] -> Success existingSchedule
+        [scheduled@(Scheduled _ start pointing)] -> case compare start startCollectAfter of
+          EQ ->
+            scheduleAt
+              schedulable
+              vector
+              (addUTCTime (realToFrac (travelTime (rotationRate satellite) pointing vector)) start)
+              existingSchedule
+          GT ->
+            -- schedule beforehand _or_ schedule after
+            undefined
+          LT ->
+            -- schedule at max of arrival time or at beginning
+            undefined
+        schedule -> Failure [PointingOutOfBounds]
 
 scheduleOn :: Satellite -> [Schedulable] -> IntervalIndex UTCTime Scheduled -> IntervalIndex UTCTime Scheduled
 scheduleOn satellite candidates existingSchedule =
