@@ -8,6 +8,7 @@ module SatSim.Schedulable
     Scheduled (..),
     ScheduleError (..),
     duration,
+    minDuration,
     unsafeScheduleAt,
     scheduleAt,
   )
@@ -93,4 +94,7 @@ duration :: Scheduled -> NominalDiffTime
 duration (Scheduled {constraints, pointing}) =
   let angularDifference = angleBetween (vector constraints) pointing
       increment = realToFrac $ 8 * unRadians angularDifference / pi
-   in 1 + increment
+   in minDuration + increment
+
+minDuration :: NominalDiffTime
+minDuration = 1
