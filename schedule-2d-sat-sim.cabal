@@ -30,6 +30,7 @@ library
     hedis,
     interval-index,
     semigroupoids,
+    these,
     time,
     validation,
 
@@ -70,5 +71,6 @@ test-suite schedule-2d-sat-sim-test
     interval-index,
     quickcheck-instances,
     schedule-2d-sat-sim,
+    these,
     time,
     validation,

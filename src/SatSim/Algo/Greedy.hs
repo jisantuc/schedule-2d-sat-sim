@@ -2,19 +2,24 @@
 
 module SatSim.Algo.Greedy where
 
-import Control.Applicative ((<|>))
+import Data.Foldable (foldl')
 import Data.Functor.Alt ((<!>))
 import Data.Interval (IntervalLit (..))
 import Data.IntervalIndex (IntervalIndex, touching)
+import qualified Data.IntervalIndex as IntervalIndex
 import Data.List (sortOn)
+import Data.These (These (..))
 import Data.Time (UTCTime)
 import Data.Time.Clock (addUTCTime)
-import Data.Validation (Validation (..))
+import Data.Validation (Validation (..), validation)
 import SatSim.Satellite (Satellite (..), completeCircleTime, rotationRate)
 import SatSim.Schedulable (Schedulable (..), ScheduleError (PointingOutOfBounds), Scheduled (..), duration, minDuration, scheduleAt)
 import SatSim.TargetVector (travelTime)
 
-scheduleOne :: Satellite -> Schedulable -> IntervalIndex UTCTime Scheduled -> Validation [ScheduleError] (IntervalIndex UTCTime Scheduled)
+vToT :: Validation e b -> These e b
+vToT = validation This That
+
+scheduleOne :: Satellite -> Schedulable -> IntervalIndex UTCTime Scheduled -> These [ScheduleError] (IntervalIndex UTCTime Scheduled)
 scheduleOne
   satellite
   schedulable@( Schedulable
@@ -30,7 +35,7 @@ scheduleOne
             `touching` IntervalLit
               ((negate . realToFrac $ halfCircleTime) `addUTCTime` startCollectAfter)
               (realToFrac halfCircleTime `addUTCTime` startCollectBefore)
-     in case nearbySchedule of
+     in vToT $ case nearbySchedule of
           -- if no nearby schedule, schedule the new thing
           [] ->
             scheduleAt
@@ -72,14 +77,13 @@ scheduleOne
           --   * end of first op + duration candidate + travelTime candidate secondOp all fits
           schedule -> Failure [PointingOutOfBounds]
 
-scheduleOn :: Satellite -> [Schedulable] -> IntervalIndex UTCTime Scheduled -> IntervalIndex UTCTime Scheduled
+scheduleOn :: Satellite -> [Schedulable] -> IntervalIndex UTCTime Scheduled -> These [ScheduleError] (IntervalIndex UTCTime Scheduled)
+scheduleOn _ [] existingSchedule = That existingSchedule
 scheduleOn satellite candidates existingSchedule =
   let sortedCandidates = sortOn arrivalOrder candidates
-      scheduleOneCandidate (Schedulable {vector, closeEnough, startCollectAfter, startCollectBefore}) =
-        -- find ops from completeCircleTime / 2 before the candidate to completeCircleTime / 2 after the candidate
-        -- from the latest one before, see if it's possible to get to the candidate from the end of it, then get to
-        -- the next op after the candidate ends
-        -- if it is, schedule the candidate at that time
-        -- if it's not, keep going
-        undefined
-   in undefined
+   in foldl'
+        ( \acc candidate ->
+            acc <> scheduleOne satellite candidate existingSchedule
+        )
+        (That IntervalIndex.empty)
+        sortedCandidates

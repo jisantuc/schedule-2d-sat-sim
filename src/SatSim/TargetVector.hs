@@ -35,7 +35,7 @@ dotProduct v1 v2 =
 
 angleBetween :: TargetVector -> TargetVector -> Radians
 angleBetween v1 v2 =
-  Radians . acos $
+  Radians . acos . min 1 $
     (v1 `dotProduct` v2) / (magnitude v1 * magnitude v2)
 
 travelTime :: Radians -> TargetVector -> TargetVector -> Seconds

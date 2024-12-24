@@ -2,6 +2,7 @@
 
 module SatSim.Satellite
   ( Satellite (..),
+    SatelliteName (..),
     completeCircleTime,
     rotationRate,
   )
@@ -9,7 +10,7 @@ where
 
 import SatSim.Quantities (Radians (..), Seconds (..))
 
-newtype SatelliteName = SatelliteName String deriving (Eq, Show)
+newtype SatelliteName = SatelliteName {unSatelliteName :: String} deriving (Eq, Show)
 
 data Satellite = SimpleSatellite
   { rotationRatePerSecond :: Radians,
