@@ -15,6 +15,7 @@ common warnings
 library
   import: warnings
   exposed-modules:
+    SatSim.Algo.Greedy
     SatSim.Cache
     SatSim.Quantities
     SatSim.Satellite
@@ -24,10 +25,12 @@ library
 
   build-depends:
     aeson,
-    base ^>=4.18,
+    base ^>=4.19,
     bytestring,
     hedis,
     interval-index,
+    semigroupoids,
+    these,
     time,
     validation,
 
@@ -40,7 +43,7 @@ executable schedule-2d-sat-sim
   -- other-modules:
   -- other-extensions:
   build-depends:
-    base ^>=4.18,
+    base ^>=4.19,
     optparse-applicative,
     schedule-2d-sat-sim,
 
@@ -54,18 +57,20 @@ test-suite schedule-2d-sat-sim-test
     SatSim.CacheSpec
     SatSim.SchedulableSpec
     SatSim.TargetVectorSpec
+    SatSim.Algo.GreedySpec
 
   type: exitcode-stdio-1.0
   hs-source-dirs: test
   main-is: Spec.hs
   build-depends:
     QuickCheck,
-    base ^>=4.18,
+    base ^>=4.19,
     bytestring,
     hedis,
     hspec,
     interval-index,
     quickcheck-instances,
     schedule-2d-sat-sim,
+    these,
     time,
     validation,

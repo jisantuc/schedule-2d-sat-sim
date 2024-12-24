@@ -22,7 +22,7 @@ spec = describe "SchedulableSpec" $ do
     getCurrentTime >>= \currentTime ->
       let east = mkTargetVector 1 0
           north = mkTargetVector 0 1
-          schedulable = Schedulable east (Radians (pi / 2)) currentTime (addUTCTime 30 currentTime)
+          schedulable = Schedulable east (Radians (pi / 2)) currentTime (addUTCTime 30 currentTime) 1
           result = unsafeScheduleAt schedulable north currentTime empty
           scheduleAtStart = result `at` currentTime
           scheduled = head scheduleAtStart
@@ -37,7 +37,7 @@ spec = describe "SchedulableSpec" $ do
     let east = mkTargetVector 1 0
         north = mkTargetVector 0 1
         northeast = mkTargetVector 1 1
-        schedulable = Schedulable east undefined undefined undefined
+        schedulable = Schedulable east undefined undefined undefined 1
         scheduled1 = Scheduled schedulable undefined north
         scheduled2 = Scheduled schedulable undefined northeast
         tolerance = 0.00001
@@ -49,7 +49,7 @@ spec = describe "SchedulableSpec" $ do
       let south = mkTargetVector 0 (-1)
           west = mkTargetVector (-1) 0
           validWindowSeconds = 30
-          schedulable = Schedulable south (Radians (pi / 8)) currentTime (addUTCTime validWindowSeconds currentTime)
+          schedulable = Schedulable south (Radians (pi / 8)) currentTime (addUTCTime validWindowSeconds currentTime) 1
        in do
             scheduleAt schedulable south (addUTCTime (-1) currentTime) empty
               `shouldBe` Failure [StartTimeOutOfBounds]
