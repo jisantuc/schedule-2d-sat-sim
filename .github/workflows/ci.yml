@@ -33,5 +33,6 @@ jobs:
             SatSim.TargetVectorSpec
             SatSim.SchedulableSpec
             SatSim.CacheSpec
+            SatSim.Algo.GreedySpec
       - name: Send coverage report
         uses: codecov/codecov-action@v5
