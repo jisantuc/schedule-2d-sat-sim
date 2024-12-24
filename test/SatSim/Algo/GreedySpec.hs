@@ -4,6 +4,7 @@ import qualified Data.IntervalIndex as IntervalIndex
 import Data.These (These (That))
 import Data.Time (UTCTime (UTCTime), addUTCTime)
 import Data.Time.Calendar.OrdinalDate (fromOrdinalDate)
+import Data.Validation (bindValidation)
 import SatSim.Algo.Greedy (scheduleOn, vToT)
 import SatSim.Quantities (Radians (..))
 import SatSim.Satellite (Satellite (..), SatelliteName (..))
@@ -36,12 +37,30 @@ spec = describe "GreedySpec" $ do
                 arrivalOrder = 1
               }
        in do
+            it "gets nothing from scheduling nothing against an empty schedule" $
+              scheduleOn (SimpleSatellite (Radians 2) (SatelliteName "simple")) [] IntervalIndex.empty
+                `shouldBe` That IntervalIndex.empty
             it "schedules a single candidate against an empty schedule at the candidate's start" $
               scheduleOn
                 (SimpleSatellite (Radians 2) (SatelliteName "simple"))
                 [candidate]
                 IntervalIndex.empty
                 `shouldBe` vToT (scheduleAt candidate point startTime IntervalIndex.empty)
-            it "gets nothing from scheduling nothing against an empty schedule" $
-              scheduleOn (SimpleSatellite (Radians 2) (SatelliteName "simple")) [] IntervalIndex.empty
-                `shouldBe` That IntervalIndex.empty
+            it "schedules two candidates that don't conflict at each of their starts" $
+              let nonConflictingCandidate =
+                    candidate
+                      { startCollectAfter = addUTCTime 100000 (startCollectBefore candidate),
+                        startCollectBefore = addUTCTime 200000 (startCollectBefore candidate)
+                      }
+               in scheduleOn
+                    (SimpleSatellite (Radians 2) (SatelliteName "simple"))
+                    [candidate, nonConflictingCandidate]
+                    IntervalIndex.empty
+                    -- It should be like scheduling them both against empty schedules and combining the result
+                    `shouldBe` vToT
+                      ( scheduleAt candidate point startTime IntervalIndex.empty
+                          `bindValidation` scheduleAt
+                            nonConflictingCandidate
+                            point
+                            (startCollectAfter nonConflictingCandidate)
+                      )
