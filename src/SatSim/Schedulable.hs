@@ -54,6 +54,7 @@ instance Interval UTCTime Scheduled where
 data ScheduleError
   = PointingOutOfBounds
   | StartTimeOutOfBounds
+  | CrowdedOut
   deriving (Eq, Show)
 
 unsafeScheduleAt ::
