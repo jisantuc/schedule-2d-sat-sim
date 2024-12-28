@@ -8,6 +8,7 @@ module SatSim.Schedulable
     Scheduled (..),
     ScheduleError (..),
     duration,
+    minDuration,
     unsafeScheduleAt,
     scheduleAt,
   )
@@ -26,7 +27,8 @@ data Schedulable = Schedulable
   { vector :: TargetVector,
     closeEnough :: Radians,
     startCollectAfter :: UTCTime,
-    startCollectBefore :: UTCTime
+    startCollectBefore :: UTCTime,
+    arrivalOrder :: Int
   }
   deriving (Eq, Show, Generic)
 
@@ -52,6 +54,7 @@ instance Interval UTCTime Scheduled where
 data ScheduleError
   = PointingOutOfBounds
   | StartTimeOutOfBounds
+  | CrowdedOut
   deriving (Eq, Show)
 
 unsafeScheduleAt ::
@@ -92,4 +95,7 @@ duration :: Scheduled -> NominalDiffTime
 duration (Scheduled {constraints, pointing}) =
   let angularDifference = angleBetween (vector constraints) pointing
       increment = realToFrac $ 8 * unRadians angularDifference / pi
-   in 1 + increment
+   in minDuration + increment
+
+minDuration :: NominalDiffTime
+minDuration = 1

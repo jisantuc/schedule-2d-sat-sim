@@ -14,6 +14,7 @@ newtype Radians = Radians {unRadians :: Float}
       Fractional,
       Num,
       Ord,
+      Real,
       Show,
       ToJSON,
       FromJSON
@@ -23,7 +24,10 @@ newtype Radians = Radians {unRadians :: Float}
 newtype Seconds = Seconds {unSeconds :: Float}
   deriving
     ( Eq,
+      Fractional,
       Num,
+      Ord,
+      Real,
       Show,
       ToJSON,
       FromJSON
