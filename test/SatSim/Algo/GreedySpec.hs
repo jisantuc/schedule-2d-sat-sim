@@ -12,15 +12,6 @@ import SatSim.Schedulable (Schedulable (..), ScheduleError (..), minDuration, sc
 import SatSim.TargetVector (mkTargetVector, travelTime)
 import Test.Hspec (Spec, describe, it, shouldBe)
 
---
--- Tests:
---   - scheduling nothing against an empty schedule successfully returns an empty schedule
---   - scheduling one thing against an empty schedule schedules the thing at its start
---   - when trying to schedule something against a schedule with ops in it already, it gets scheduled:
---     - as early as possible before the first op
---     - as early as possible between two existing ops
---     - as early as possible after the last op
---     - or not at all
 spec :: Spec
 spec =
   describe "GreedySpec"
@@ -127,28 +118,64 @@ spec =
                             )
                             IntervalIndex.empty
                         )
-            it "doesn't schedule a candidate between two other candidates when it can't" $
-              let sharedTarget = mkTargetVector 4 9
-                  badTarget = mkTargetVector (-4) (-9)
-                  candidateStart =
+            it "keeps scheduling past the first error" $
+              let shortDurationCandidate =
                     candidate
-                      { startCollectBefore = addUTCTime 10 (startCollectAfter candidate),
-                        vector = sharedTarget
+                      { startCollectBefore = addUTCTime 1 $ startCollectAfter candidate
                       }
+               in scheduleOn
+                    fastSatellite
+                    [shortDurationCandidate, shortDurationCandidate, candidate]
+                    IntervalIndex.empty
+                    `shouldBe` ( scheduleOn fastSatellite [shortDurationCandidate, candidate] IntervalIndex.empty
+                                   <> This [StartTimeOutOfBounds]
+                               )
+            it "doesn't schedule a candidate between two other candidates when it can't get away from there in time" $
+              let sharedTarget = mkTargetVector 0 1
+                  midTarget = mkTargetVector 1 0
+                  candidateStart =
+                    candidate {vector = sharedTarget}
+                  -- the mid candidate can start at the same time as the start candidate but must start before the end
+                  -- candidate
                   candidateMid =
                     candidateStart
-                      { startCollectAfter = startCollectBefore candidateStart,
-                        startCollectBefore = addUTCTime 10 (startCollectAfter candidateStart),
-                        vector = badTarget
+                      { vector = midTarget,
+                        startCollectAfter =
+                          addUTCTime 1 $ startCollectAfter candidateStart,
+                        startCollectBefore =
+                          addUTCTime 10 $ startCollectAfter candidateStart
                       }
                   candidateEnd =
                     candidateStart
-                      { startCollectAfter = startCollectBefore candidateMid,
-                        startCollectBefore = addUTCTime 10 (startCollectAfter candidateMid)
+                      { startCollectAfter = addUTCTime 10 $ startCollectAfter candidateStart,
+                        startCollectBefore = addUTCTime 1000 $ startCollectAfter candidateStart,
+                        vector = sharedTarget
                       }
-               in scheduleOn slowSatellite [candidateStart, candidateEnd, candidateMid] IntervalIndex.empty
-                    `shouldBe` scheduleOn
-                      slowSatellite
-                      [candidateStart, candidateEnd]
-                      IntervalIndex.empty
-                      <> This [StartTimeOutOfBounds]
+                  -- the satellite should be fast enough to get to candidateMid
+                  -- the targets are pi / 2 radians apart, so if it takes 8 seconds to get there, that should be
+                  -- enough time to make sure it can't rotate back to end candidate
+                  tooSlowSatellite = slowSatellite {rotationRatePerSecond = Radians (pi / 16)}
+               in do
+                    scheduleOn tooSlowSatellite [candidateStart] IntervalIndex.empty
+                      `shouldBe` vToT
+                        ( scheduleAt
+                            candidateStart
+                            (vector candidateStart)
+                            (startCollectAfter candidateStart)
+                            IntervalIndex.empty
+                        )
+                    scheduleOn tooSlowSatellite [candidateStart, candidateEnd] IntervalIndex.empty
+                      `shouldBe` vToT
+                        ( scheduleAt
+                            candidateStart
+                            (vector candidateStart)
+                            (startCollectAfter candidateStart)
+                            IntervalIndex.empty
+                            `bindValidation` scheduleAt
+                              candidateEnd
+                              (vector candidateEnd)
+                              (startCollectAfter candidateEnd)
+                        )
+                    scheduleOn tooSlowSatellite [candidateStart, candidateEnd, candidateMid] IntervalIndex.empty
+                      `shouldBe` scheduleOn tooSlowSatellite [candidateStart, candidateEnd] IntervalIndex.empty
+                        <> This [CrowdedOut]

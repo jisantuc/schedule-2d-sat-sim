@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module SatSim.Algo.Greedy where
@@ -41,7 +40,10 @@ scheduleOne
               ((negate . realToFrac $ halfCircleTime) `addUTCTime` startCollectAfter)
               (realToFrac halfCircleTime `addUTCTime` startCollectBefore)
         satelliteTravelTime = travelTime (rotationRate satellite)
-     in vToT $ case nearbySchedule of
+        reconcile prior result = case result of
+          schedule@(Success _) -> vToT schedule
+          errs@(Failure _) -> That prior <> vToT errs
+     in reconcile existingSchedule $ case nearbySchedule of
           -- if no nearby schedule, schedule the new thing
           [] ->
             scheduleAt
@@ -55,28 +57,30 @@ scheduleOne
           -- \* if it is, schedule at the start
           -- \* if not, try to schedule at start + duration + travelTime between pointings
           [scheduled@(Scheduled _ start pointing)] ->
-            scheduleAt
-              schedulable
-              vector
-              -- earlier of start time or required departure time
-              ( min
-                  -- departure time
-                  ( addUTCTime
-                      (negate . realToFrac . satelliteTravelTime vector $ pointing)
-                      $ addUTCTime (negate minDuration) start
+            let travelTimeBetweenPoints = realToFrac . satelliteTravelTime vector $ pointing
+                earliestStartAfterFirstOp = addUTCTime travelTimeBetweenPoints (addUTCTime (duration scheduled) start)
+             in scheduleAt
+                  schedulable
+                  vector
+                  -- earliest of start time or required departure time
+                  ( min
+                      -- departure time
+                      ( addUTCTime
+                          (negate travelTimeBetweenPoints)
+                          $ addUTCTime (negate minDuration) start
+                      )
+                      -- window open
+                      startCollectAfter
                   )
-                  -- window open
-                  startCollectAfter
-              )
-              existingSchedule
-              <!>
-              -- alternatively, schedule at the min of op end + travel time to candidate (always want earliest, so no
-              -- min/max required here)
-              scheduleAt
-                schedulable
-                vector
-                (addUTCTime ((realToFrac . satelliteTravelTime vector) pointing) (addUTCTime (duration scheduled) start))
-                existingSchedule
+                  existingSchedule
+                  <!>
+                  -- alternatively, schedule at the max of op end + travel time to candidate or earliest allowed
+                  -- start for second op
+                  scheduleAt
+                    schedulable
+                    vector
+                    (max earliestStartAfterFirstOp startCollectAfter)
+                    existingSchedule
           -- otherwise:
           -- otherwise, go through pairs of ops trying to schedule between them,
           -- making sure:
@@ -99,22 +103,21 @@ scheduleOne
                   )
                   existingSchedule
                   <!> foldMap'
-                    ( \case
-                        (scheduled1@(Scheduled _ start1 pointing1), Scheduled _ start2 pointing2) ->
-                          let earliestStartOfOp =
-                                addUTCTime
-                                  ( duration scheduled1
-                                      + realToFrac (satelliteTravelTime pointing1 vector)
-                                  )
-                                  start1
-                              earliestEndOfOp = addUTCTime minDuration earliestStartOfOp
-                              earliestArrivalAtNextOp =
-                                addUTCTime
-                                  (realToFrac $ satelliteTravelTime vector pointing2)
-                                  earliestEndOfOp
-                           in if earliestArrivalAtNextOp <= start2
-                                then scheduleAt schedulable vector earliestStartOfOp existingSchedule
-                                else Failure [CrowdedOut]
+                    ( \(scheduled1@(Scheduled _ start1 pointing1), Scheduled _ start2 pointing2) ->
+                        let earliestStartOfOp =
+                              addUTCTime
+                                ( duration scheduled1
+                                    + realToFrac (satelliteTravelTime pointing1 vector)
+                                )
+                                start1
+                            earliestEndOfOp = addUTCTime minDuration earliestStartOfOp
+                            earliestArrivalAtNextOp =
+                              addUTCTime
+                                (realToFrac $ satelliteTravelTime vector pointing2)
+                                earliestEndOfOp
+                         in if earliestArrivalAtNextOp <= start2
+                              then scheduleAt schedulable vector earliestStartOfOp existingSchedule
+                              else Failure [CrowdedOut]
                     )
                     withNext
 
@@ -130,7 +133,7 @@ scheduleOn satellite candidates existingSchedule =
         ( \acc candidate ->
             case acc of
               errs@(This _) -> errs <> scheduleOne satellite candidate existingSchedule
-              That schedule -> scheduleOne satellite candidate schedule
+              (That schedule) -> scheduleOne satellite candidate schedule
               These errs schedule -> This errs <> scheduleOne satellite candidate schedule
         )
         (That IntervalIndex.empty)
