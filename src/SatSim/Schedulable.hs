@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module SatSim.Schedulable
   ( Schedulable (..),
@@ -13,7 +14,7 @@ module SatSim.Schedulable
   )
 where
 
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON, ToJSON (..), object, (.=))
 import Data.Interval (Interval (..))
 import Data.IntervalIndex (IntervalIndex, insert)
 import Data.Time (NominalDiffTime, UTCTime, addUTCTime)
@@ -41,7 +42,9 @@ data Scheduled = Scheduled
   }
   deriving (Eq, Show, Generic)
 
-instance ToJSON Scheduled
+instance ToJSON Scheduled where
+  toJSON scheduled@(Scheduled constraints start pointing) =
+    object ["constraints" .= constraints, "start" .= start, "pointing" .= pointing, "duration" .= duration scheduled]
 
 instance FromJSON Scheduled
 
