@@ -22,6 +22,7 @@
             hlint
             ormolu
           ] ++ (with pkgs; [
+            kafkactl
             redis
           ]);
         in

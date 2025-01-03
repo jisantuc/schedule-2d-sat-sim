@@ -99,3 +99,4 @@ duration (Scheduled {constraints, pointing}) =
 
 minDuration :: NominalDiffTime
 minDuration = 1
+

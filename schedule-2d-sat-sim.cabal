@@ -17,6 +17,7 @@ library
   exposed-modules:
     SatSim.Algo.Greedy
     SatSim.Cache
+    SatSim.Gen
     SatSim.Quantities
     SatSim.Satellite
     SatSim.Schedulable
@@ -25,10 +26,13 @@ library
 
   build-depends:
     aeson,
+    async,
     base ^>=4.19,
     bytestring,
     hedis,
+    hw-kafka-client,
     interval-index,
+    random,
     semigroupoids,
     these,
     time,
@@ -54,10 +58,11 @@ test-suite schedule-2d-sat-sim-test
   import: warnings
   default-language: Haskell2010
   other-modules:
+    SatSim.Algo.GreedySpec
     SatSim.CacheSpec
+    SatSim.GenSpec
     SatSim.SchedulableSpec
     SatSim.TargetVectorSpec
-    SatSim.Algo.GreedySpec
 
   type: exitcode-stdio-1.0
   hs-source-dirs: test
