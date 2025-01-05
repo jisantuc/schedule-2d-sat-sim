@@ -26,7 +26,7 @@ import Options.Applicative
     progDesc,
     short,
     subparser,
-    (<**>),
+    (<**>), hsubparser,
   )
 import SatSim.Gen.Producer (stdoutBatchProducer, timeProducer)
 import SatSim.Quantities (Seconds (..))
@@ -65,20 +65,21 @@ produceEvery =
     <$> option auto (long "time-between-batches" <> short 't' <> metavar "BATCH_INTERVAL")
     <*> (Seconds <$> option auto (long "batch-window-size" <> short 'w' <> metavar "BATCH_INTERVAL"))
 
+-- TODO -- how can I print available commands on empty options?
 commandParser :: Parser Command
 commandParser =
-  subparser
-    ( command "producer" $
-        info
-          (produceEvery <**> helper)
-          ( fullDesc
-              <> progDesc "Produce a batch of schedulable tasks every BATCH_INTERVAL seconds"
-          )
+  hsubparser
+    ( command
+        "producer"
+        ( info
+            produceEvery
+            ( fullDesc
+                <> progDesc "Produce a batch of schedulable tasks every BATCH_INTERVAL seconds"
+            )
+        )
+        <> command "setup-kafka" (info (pure SetupKafka) (fullDesc <> progDesc "Configure required Kafka topics"))
     )
-    <|> subparser
-      ( command "setup-kafka" $
-          info (pure SetupKafka <**> helper) (fullDesc <> progDesc "Configure required Kafka topics")
-      )
+    <**> helper
 
 runProducer :: Int -> Seconds -> IO ()
 runProducer timeBetweenBatches batchWindowSize =
