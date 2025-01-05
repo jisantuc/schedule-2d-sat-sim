@@ -14,7 +14,7 @@ module SatSim.Schedulable
   )
 where
 
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON, ToJSON (..))
 import Data.Interval (Interval (..))
 import Data.IntervalIndex (IntervalIndex, insert)
 import Data.Time (NominalDiffTime, UTCTime, addUTCTime)
@@ -99,4 +99,3 @@ duration (Scheduled {constraints, pointing}) =
 
 minDuration :: NominalDiffTime
 minDuration = 1
-
