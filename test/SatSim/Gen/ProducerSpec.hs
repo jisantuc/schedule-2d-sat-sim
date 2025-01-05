@@ -1,10 +1,10 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module SatSim.GenSpec where
+module SatSim.Gen.ProducerSpec where
 
 import Data.Foldable (traverse_)
 import Data.Time (addUTCTime, getCurrentTime)
-import SatSim.Gen (genSchedulable)
+import SatSim.Gen.Producer (genSchedulable)
 import SatSim.Schedulable (Schedulable (..))
 import Test.Hspec (Spec, describe, it, shouldBe)
 

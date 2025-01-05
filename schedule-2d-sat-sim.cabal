@@ -17,7 +17,7 @@ library
   exposed-modules:
     SatSim.Algo.Greedy
     SatSim.Cache
-    SatSim.Gen
+    SatSim.Gen.Producer
     SatSim.Quantities
     SatSim.Satellite
     SatSim.Schedulable
@@ -29,6 +29,7 @@ library
     async,
     base ^>=4.19,
     bytestring,
+    conduit,
     hedis,
     hw-kafka-client,
     interval-index,
@@ -48,6 +49,7 @@ executable schedule-2d-sat-sim
   -- other-extensions:
   build-depends:
     base ^>=4.19,
+    conduit,
     optparse-applicative,
     schedule-2d-sat-sim,
 
@@ -60,7 +62,7 @@ test-suite schedule-2d-sat-sim-test
   other-modules:
     SatSim.Algo.GreedySpec
     SatSim.CacheSpec
-    SatSim.GenSpec
+    SatSim.Gen.ProducerSpec
     SatSim.SchedulableSpec
     SatSim.TargetVectorSpec
 
