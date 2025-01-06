@@ -26,7 +26,6 @@ library
 
   build-depends:
     aeson,
-    async,
     base ^>=4.19,
     bytestring,
     conduit,
@@ -72,13 +71,16 @@ test-suite schedule-2d-sat-sim-test
   main-is: Spec.hs
   build-depends:
     QuickCheck,
+    async,
     base ^>=4.19,
     bytestring,
+    conduit,
     hedis,
     hspec,
     interval-index,
     quickcheck-instances,
     schedule-2d-sat-sim,
+    silently,
     these,
     time,
     validation,
