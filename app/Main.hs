@@ -65,7 +65,6 @@ produceEvery =
     <$> option auto (long "time-between-batches" <> short 't' <> metavar "BATCH_INTERVAL")
     <*> (Seconds <$> option auto (long "batch-window-size" <> short 'w' <> metavar "BATCH_INTERVAL"))
 
--- TODO -- how can I print available commands on empty options?
 commandParser :: Parser Command
 commandParser =
   hsubparser
