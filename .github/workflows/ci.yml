@@ -25,14 +25,17 @@ jobs:
             substituters = https://cache.iog.io
       - uses: DeterminateSystems/magic-nix-cache-action@v8
       - run: nix develop .#ci --command ./scripts/test
+        env:
+          ENV: ci
       - name: Generate coverage report
         uses: 8c6794b6/hpc-codecov-action@v4
         with:
           target: cabal:schedule-2d-sat-sim-test
           excludes: |
-            SatSim.TargetVectorSpec,
-            SatSim.SchedulableSpec,
+            SatSim.Algo.GreedySpec,
             SatSim.CacheSpec,
-            SatSim.Algo.GreedySpec
+            SatSim.Gen.ProducerSpec
+            SatSim.SchedulableSpec,
+            SatSim.TargetVectorSpec
       - name: Send coverage report
         uses: codecov/codecov-action@v5

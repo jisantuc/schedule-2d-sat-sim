@@ -7,6 +7,7 @@ module SatSim.Quantities
 where
 
 import Data.Aeson (FromJSON, ToJSON)
+import System.Random (Random)
 
 newtype Radians = Radians {unRadians :: Float}
   deriving
@@ -27,6 +28,7 @@ newtype Seconds = Seconds {unSeconds :: Float}
       Fractional,
       Num,
       Ord,
+      Random,
       Real,
       Show,
       ToJSON,

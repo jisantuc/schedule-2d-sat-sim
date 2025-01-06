@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module SatSim.CacheSpec where
@@ -11,7 +12,8 @@ import SatSim.Cache (ScheduleId (..), readSchedule, scheduleIdKey, writeSchedule
 import SatSim.Quantities (Radians (..))
 import SatSim.Schedulable (Schedulable (..), Scheduled (..))
 import SatSim.TargetVector (TargetVector, mkTargetVector)
-import Test.Hspec (Spec, describe, it, shouldBe)
+import System.Environment (lookupEnv)
+import Test.Hspec (Spec, describe, it, pending, shouldBe)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (Arbitrary (arbitrary), Gen, choose, listOf)
 import Test.QuickCheck.Instances.Time ()
@@ -41,19 +43,27 @@ spec =
   describe "CacheSpec" $ do
     prop "round trips a schedule" $
       genScheduleIndex <&> \schedule ->
-        do
+        ifEnabled $ do
           conn <- checkedConnect defaultConnectInfo
           writeSchedule conn (ScheduleId "abcde") schedule
           fromCache <- readSchedule conn (ScheduleId "abcde")
           allIntervals <$> fromCache `shouldBe` Just (allIntervals schedule)
     it "finds nothing for a bogus key" $
-      do
+      ifEnabled $ do
         conn <- checkedConnect defaultConnectInfo
         fromBogus <- readSchedule conn (ScheduleId "bogus")
         fromBogus `shouldBe` Nothing
     it "silently finds nothing in the face of bad data" $
-      do
+      ifEnabled $ do
         conn <- checkedConnect defaultConnectInfo
         void . runRedis conn $ set (scheduleIdKey (ScheduleId "lol")) (pack "oh no")
         fromCache <- readSchedule conn (ScheduleId "lol")
         fromCache `shouldBe` Nothing
+
+ifEnabled :: IO () -> IO ()
+ifEnabled t =
+  lookupEnv "ENV" >>= \case
+    Just "local" -> t
+    Just "ci" -> t
+    Just e -> fail $ "Unexpected env value: " <> e
+    Nothing -> pending
