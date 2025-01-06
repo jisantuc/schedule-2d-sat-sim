@@ -2,15 +2,13 @@
 
 module Main where
 
-import Control.Applicative ((<|>))
-import Control.Lens ((.~))
 import Control.Monad (forever)
-import Data.Aeson (ToJSON (toJSON), Value (Object))
-import Data.Aeson.KeyMap (fromList)
 import Data.Conduit (runConduit, (.|))
-import Data.Foldable (traverse_)
-import Data.Function ((&))
-import Network.Wreq (defaults, header, putWith)
+import Kafka.Producer
+  ( Timeout (..),
+    brokersList,
+    sendTimeout,
+  )
 import Options.Applicative
   ( Parser,
     auto,
@@ -18,6 +16,7 @@ import Options.Applicative
     execParser,
     fullDesc,
     helper,
+    hsubparser,
     idm,
     info,
     long,
@@ -25,39 +24,14 @@ import Options.Applicative
     option,
     progDesc,
     short,
-    subparser,
-    (<**>), hsubparser,
+    (<**>),
   )
-import SatSim.Gen.Producer (stdoutBatchProducer, timeProducer)
+import SatSim.Gen.Producer (kafkaBatchProducer, timeProducer)
 import SatSim.Quantities (Seconds (..))
-import System.Environment (lookupEnv)
 
 data Command
   = ProduceEvery Int Seconds
   | RunScheduler
-  | SetupKafka
-
-setupKafka :: IO ()
-setupKafka =
-  let topics = ["schedulable-batches"] :: [String]
-      opts =
-        defaults
-          & header "Content-Type" .~ ["application/json"]
-          & header "Accept" .~ ["application/json"]
-      apiBase clusterId =
-        "http://localhost:9021/2.0/kafka/" <> clusterId <> "/topics?validate=false"
-      createTopic api topic =
-        putWith
-          opts
-          api
-          ( Object . fromList $ [("name", toJSON topic), ("numPartitions", "1"), ("replicationFactor", "1")]
-          )
-   in do
-        clusterId <- lookupEnv "CLUSTER_ID"
-        case clusterId of
-          Just cluster ->
-            traverse_ (createTopic (apiBase cluster)) topics
-          Nothing -> fail "CLUSTER_ID is a required env var"
 
 produceEvery :: Parser Command
 produceEvery =
@@ -76,13 +50,14 @@ commandParser =
                 <> progDesc "Produce a batch of schedulable tasks every BATCH_INTERVAL seconds"
             )
         )
-        <> command "setup-kafka" (info (pure SetupKafka) (fullDesc <> progDesc "Configure required Kafka topics"))
     )
     <**> helper
 
 runProducer :: Int -> Seconds -> IO ()
 runProducer timeBetweenBatches batchWindowSize =
-  forever . runConduit $ (timeProducer timeBetweenBatches .| stdoutBatchProducer batchWindowSize)
+  forever . runConduit $ (timeProducer timeBetweenBatches .| kafkaBatchProducer kafkaSettings batchWindowSize)
+  where
+    kafkaSettings = brokersList ["localhost:9092"] <> sendTimeout (Timeout 5)
 
 main :: IO ()
 main = do
@@ -90,4 +65,3 @@ main = do
   case cmd of
     ProduceEvery n s -> runProducer n s
     RunScheduler -> print ("someday" :: String)
-    SetupKafka -> setupKafka
