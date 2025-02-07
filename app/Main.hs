@@ -74,6 +74,5 @@ main :: IO ()
 main = do
   cmd <- execParser (info commandParser idm)
   case cmd of
-    ProduceEvery kafkaSettings n s -> do
-      runProducer kafkaSettings n s
+    ProduceEvery kafkaSettings n s -> runProducer kafkaSettings n s
     RunScheduler -> print ("someday" :: String)
