@@ -1,13 +1,12 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Main where
 
 import Control.Monad (forever)
 import Data.Conduit (runConduit, (.|))
 import Data.List (singleton)
+import Data.Text (pack)
 import Kafka.Producer
-  ( BrokerAddress (BrokerAddress),
-    ProducerProperties (ppKafkaProps, ppTopicProps),
+  ( BrokerAddress (..),
+    ProducerProperties (..),
     Timeout (Timeout),
     brokersList,
     sendTimeout,
@@ -32,24 +31,17 @@ import Options.Applicative
   )
 import SatSim.Gen.Producer (kafkaBatchProducer, timeProducer)
 import SatSim.Quantities (Seconds (..))
-import Data.Text (pack)
 
 data Command
   = ProduceEvery ProducerProperties Int Seconds
   | RunScheduler
 
--- TODO: something's busted with the broker parser, and I'm not getting any info about what.
--- add a debug command that just does execParser with some pretty printing at different parse levels
 producerPropertiesParser :: Parser ProducerProperties
 producerPropertiesParser =
-  let brokers =
-        brokersList . singleton . BrokerAddress . pack
-          <$> option
-            auto
-            ( long "default-broker"
-                <> metavar "DEFAULT_BROKER"
-                <> value "localhost:9092"
-            )
+  let brokerAddressStringParser =
+        ("localhost:" <>) . show
+          <$> option auto (long "broker-port" <> metavar "BROKER_PORT" <> value (9092 :: Integer))
+      brokers = brokersList . singleton . BrokerAddress . pack <$> brokerAddressStringParser
       timeout = sendTimeout . Timeout <$> option auto (long "send-timeout-ms" <> metavar "SEND_TIMEOUT" <> value 5)
    in (<>) <$> brokers <*> timeout
 
@@ -83,7 +75,5 @@ main = do
   cmd <- execParser (info commandParser idm)
   case cmd of
     ProduceEvery kafkaSettings n s -> do
-      print (ppKafkaProps kafkaSettings)
-      print (ppTopicProps kafkaSettings)
       runProducer kafkaSettings n s
     RunScheduler -> print ("someday" :: String)
