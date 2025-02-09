@@ -26,7 +26,7 @@ genSchedulable startingAfter withinNextSeconds howMany =
   let generator = replicateM howMany $ do
         windowOpen <- randomRIO (1, withinNextSeconds) <&> ((`addUTCTime` startingAfter) . realToFrac)
         windowDuration <- realToFrac <$> randomRIO (Seconds 5, Seconds 30)
-        targetVector <- mkTargetVector <$> randomIO <*> randomIO
+        targetVector <- mkTargetVector <$> randomRIO (-1, 1) <*> randomRIO (-1, 1)
         pure $
           Schedulable
             { vector = targetVector,
