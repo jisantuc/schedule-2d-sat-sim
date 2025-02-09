@@ -1,13 +1,13 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import Control.Monad (forever)
 import Data.Conduit (runConduit, (.|))
 import Data.List (singleton)
-import Data.Text (pack)
 import Kafka.Producer
-  ( BrokerAddress (..),
-    ProducerProperties (..),
-    Timeout (Timeout),
+  ( ProducerProperties (..),
+    Timeout (..),
     brokersList,
     sendTimeout,
   )
@@ -26,6 +26,7 @@ import Options.Applicative
     option,
     progDesc,
     short,
+    str,
     value,
     (<**>),
   )
@@ -38,10 +39,8 @@ data Command
 
 producerPropertiesParser :: Parser ProducerProperties
 producerPropertiesParser =
-  let brokerAddressStringParser =
-        ("localhost:" <>) . show
-          <$> option auto (long "broker-port" <> metavar "BROKER_PORT" <> value (9092 :: Integer))
-      brokers = brokersList . singleton . BrokerAddress . pack <$> brokerAddressStringParser
+  let brokerAddress = option str (long "broker-address" <> metavar "BROKER_PORT" <> value "localhost:9092")
+      brokers = brokersList . singleton <$> brokerAddress
       timeout = sendTimeout . Timeout <$> option auto (long "send-timeout-ms" <> metavar "SEND_TIMEOUT" <> value 5)
    in (<>) <$> brokers <*> timeout
 
