@@ -26,6 +26,7 @@ library
 
   build-depends:
     aeson,
+    amqp,
     base ^>=4.19,
     bytestring,
     conduit,

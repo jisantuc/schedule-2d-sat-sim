@@ -24,6 +24,7 @@
           ] ++ (with pkgs; [
             httpie
             kafkactl
+            rabbitmq-server
             redis
           ]);
         in
