@@ -16,12 +16,12 @@ library
   import: warnings
   exposed-modules:
     SatSim.Algo.Greedy
+    SatSim.AMQP
     SatSim.Cache
     SatSim.Gen.Producer
     SatSim.Quantities
     SatSim.Satellite
     SatSim.Schedulable
-    SatSim.State
     SatSim.TargetVector
 
   build-depends:

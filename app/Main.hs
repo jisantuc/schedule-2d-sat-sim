@@ -32,10 +32,12 @@ import Options.Applicative
   )
 import SatSim.Gen.Producer (kafkaBatchProducer, timeProducer)
 import SatSim.Quantities (Seconds (..))
+import SatSim.AMQP (amqpDemo)
 
 data Command
   = ProduceEvery ProducerProperties Int Seconds
   | RunScheduler
+  | RabbitMQDemo
 
 producerPropertiesParser :: Parser ProducerProperties
 producerPropertiesParser =
@@ -51,6 +53,9 @@ produceEvery =
     <*> option auto (long "time-between-batches" <> short 't' <> metavar "BATCH_INTERVAL")
     <*> (Seconds <$> option auto (long "batch-window-size" <> short 'w' <> metavar "BATCH_SIZE"))
 
+amqpDemoParser :: Parser Command
+amqpDemoParser = pure RabbitMQDemo
+
 commandParser :: Parser Command
 commandParser =
   hsubparser
@@ -62,8 +67,12 @@ commandParser =
                 <> progDesc "Produce a batch of schedulable tasks every BATCH_INTERVAL seconds"
             )
         )
+        <> command
+          "amqp-demo"
+          (info amqpDemoParser (fullDesc <> progDesc "asdf"))
     )
     <**> helper
+
 
 runProducer :: ProducerProperties -> Int -> Seconds -> IO ()
 runProducer kafkaSettings timeBetweenBatches batchWindowSize =
@@ -75,3 +84,4 @@ main = do
   case cmd of
     ProduceEvery kafkaSettings n s -> runProducer kafkaSettings n s
     RunScheduler -> print ("someday" :: String)
+    RabbitMQDemo -> amqpDemo
