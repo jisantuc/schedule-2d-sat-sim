@@ -2,8 +2,13 @@
 
 module SatSim.AMQP where
 
+import Control.Concurrent (threadDelay)
+import Control.Monad (forever)
+import Data.Aeson (eitherDecode, encode)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Functor (void)
+import Data.Text (Text)
+import Data.Time (getCurrentTime)
 import Network.AMQP
   ( Ack (..),
     DeliveryMode (Persistent),
@@ -24,6 +29,10 @@ import Network.AMQP
     openConnection,
     publishMsg,
   )
+import SatSim.Gen.Producer (genSchedulable)
+import SatSim.Quantities (Seconds (..))
+import SatSim.Schedulable (Schedulable (..))
+import System.Random (randomRIO)
 
 myCallback :: (Message, Envelope) -> IO ()
 myCallback (msg, env) = do
@@ -31,36 +40,71 @@ myCallback (msg, env) = do
   -- acknowledge receiving the message
   ackEnv env
 
-amqpDemo :: IO ()
-amqpDemo =
-  let xName = "demo-exchange"
-   in do
-        conn <- openConnection "127.0.0.1" "/" "guest" "guest"
-        chan <- openChannel conn
-        -- declare a queue, exchange and binding
-        (queue, _, _) <- declareQueue chan (newQueue {queueName = "lol", queueDurable = True})
-        print $ "Queue is: " <> show queue
-        declareExchange chan newExchange {exchangeName = xName, exchangeType = "direct"}
-        bindQueue chan queue xName "myKey"
+produceBatchesToExchange :: Seconds -> Seconds -> Text -> IO ()
+produceBatchesToExchange (Seconds awakeEveryMs) batchWindowSize exchangeName' =
+  forever $ do
+    conn <- openConnection "127.0.0.1" "/" "guest" "guest"
+    chan <- openChannel conn
+    threadDelay (floor awakeEveryMs * 1000000) >> do
+      currentTime <- getCurrentTime
+      batchSize <- randomRIO (1, 20)
+      candidates <- genSchedulable currentTime batchWindowSize batchSize
+      declareExchange chan (newExchange {exchangeName = exchangeName', exchangeType = "fanout"})
+      print $ "Publishing message with length: " <> show (length candidates)
+      void $
+        publishMsg
+          chan
+          exchangeName'
+          "otherkey"
+          ( newMsg
+              { msgBody = encode candidates,
+                msgDeliveryMode = Just Persistent
+              }
+          )
 
-        -- subscribe to the queue
-        void $ consumeMsgs chan queue Ack myCallback
+consumeBatchesFromExchange :: Text -> IO ()
+consumeBatchesFromExchange exchangeName' = do
+  conn <- openConnection "127.0.0.1" "/" "guest" "guest"
+  chan <- openChannel conn
+  declareExchange chan (newExchange {exchangeName = exchangeName', exchangeType = "fanout"})
+  (queue, _, _) <- declareQueue chan (newQueue {queueName = "", queueExclusive = True})
+  bindQueue chan queue exchangeName' "otherkey"
+  void . forever $ consumeMsgs chan queue Ack callback
+  where
+    callback :: (Message, Envelope) -> IO ()
+    callback (msg, envelope) = do
+      print (BL.unpack (msgBody msg))
+      either putStrLn print (eitherDecode (msgBody msg) :: Either String [Schedulable])
+      ackEnv envelope
 
-        -- publish a message to our new exchange
-        void $
-          publishMsg
-            chan
-            xName
-            "myKey"
-            ( newMsg
-                { msgBody = BL.pack "hello world",
-                  msgDeliveryMode = Just Persistent
-                }
-            )
+amqpDemo :: Text -> IO ()
+amqpDemo xName =
+  do
+    conn <- openConnection "127.0.0.1" "/" "guest" "guest"
+    chan <- openChannel conn
+    declareExchange chan (newExchange {exchangeName = xName, exchangeType = "fanout"})
+    -- declare a queue, exchange and binding
+    (queue, _, _) <- declareQueue chan (newQueue {queueName = "", queueExclusive = True})
+    bindQueue chan queue xName ""
 
-        void getLine -- wait for keypress
-        closeConnection conn
-        putStrLn "connection closed"
+    -- subscribe to the queue
+    void $ consumeMsgs chan queue Ack myCallback
+
+    -- publish a message to our new exchange
+    void $
+      publishMsg
+        chan
+        xName
+        ""
+        ( newMsg
+            { msgBody = BL.pack "hello world",
+              msgDeliveryMode = Just Persistent
+            }
+        )
+
+    void getLine -- wait for keypress
+    closeConnection conn
+    putStrLn "connection closed"
 
 demo :: IO ()
 demo = undefined

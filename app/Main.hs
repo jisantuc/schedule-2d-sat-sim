@@ -5,6 +5,7 @@ module Main where
 import Control.Monad (forever)
 import Data.Conduit (runConduit, (.|))
 import Data.List (singleton)
+import Data.Text (Text)
 import Kafka.Producer
   ( ProducerProperties (..),
     Timeout (..),
@@ -30,14 +31,15 @@ import Options.Applicative
     value,
     (<**>),
   )
+import SatSim.AMQP (consumeBatchesFromExchange, produceBatchesToExchange)
 import SatSim.Gen.Producer (kafkaBatchProducer, timeProducer)
 import SatSim.Quantities (Seconds (..))
-import SatSim.AMQP (amqpDemo)
 
 data Command
   = ProduceEvery ProducerProperties Int Seconds
   | RunScheduler
-  | RabbitMQDemo
+  | RabbitMQProducerDemo Text
+  | RabbitMQConsumerDemo Text
 
 producerPropertiesParser :: Parser ProducerProperties
 producerPropertiesParser =
@@ -53,8 +55,11 @@ produceEvery =
     <*> option auto (long "time-between-batches" <> short 't' <> metavar "BATCH_INTERVAL")
     <*> (Seconds <$> option auto (long "batch-window-size" <> short 'w' <> metavar "BATCH_SIZE"))
 
-amqpDemoParser :: Parser Command
-amqpDemoParser = pure RabbitMQDemo
+amqpProducerDemoParser :: Parser Command
+amqpProducerDemoParser = RabbitMQProducerDemo <$> option str (long "exchange-name" <> short 'x' <> metavar "EXCHANGE_NAME")
+
+amqpConsumerDemoParser :: Parser Command
+amqpConsumerDemoParser = RabbitMQConsumerDemo <$> option str (long "exchange-name" <> short 'x' <> metavar "EXCHANGE_NAME")
 
 commandParser :: Parser Command
 commandParser =
@@ -68,11 +73,13 @@ commandParser =
             )
         )
         <> command
-          "amqp-demo"
-          (info amqpDemoParser (fullDesc <> progDesc "asdf"))
+          "amqp-producer-demo"
+          (info amqpProducerDemoParser (fullDesc <> progDesc "produce to an amqp topic"))
+        <> command
+          "amqp-consumer-demo"
+          (info amqpConsumerDemoParser (fullDesc <> progDesc "consume from an amqp topic"))
     )
     <**> helper
-
 
 runProducer :: ProducerProperties -> Int -> Seconds -> IO ()
 runProducer kafkaSettings timeBetweenBatches batchWindowSize =
@@ -84,4 +91,5 @@ main = do
   case cmd of
     ProduceEvery kafkaSettings n s -> runProducer kafkaSettings n s
     RunScheduler -> print ("someday" :: String)
-    RabbitMQDemo -> amqpDemo
+    RabbitMQProducerDemo exchangeName -> produceBatchesToExchange 3 300 exchangeName
+    RabbitMQConsumerDemo exchangeName -> consumeBatchesFromExchange exchangeName

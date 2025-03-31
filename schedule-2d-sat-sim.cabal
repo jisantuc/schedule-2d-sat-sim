@@ -35,6 +35,7 @@ library
     interval-index,
     random,
     semigroupoids,
+    text,
     these,
     time,
     validation,
@@ -53,6 +54,7 @@ executable schedule-2d-sat-sim
     hw-kafka-client,
     optparse-applicative,
     schedule-2d-sat-sim,
+    text
 
   hs-source-dirs: app
   default-language: Haskell2010
