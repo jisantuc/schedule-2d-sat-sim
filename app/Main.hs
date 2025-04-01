@@ -3,6 +3,7 @@
 module Main where
 
 import Control.Monad (forever)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Conduit (runConduit, (.|))
 import Data.List (singleton)
 import Data.Text (Text)
@@ -18,6 +19,7 @@ import Options.Applicative
     command,
     execParser,
     fullDesc,
+    help,
     helper,
     hsubparser,
     idm,
@@ -31,15 +33,16 @@ import Options.Applicative
     value,
     (<**>),
   )
-import SatSim.AMQP (consumeBatchesFromExchange, produceBatchesToExchange)
+import SatSim.Consumer.AMQP (Heartbeat (..), consumeBatchesFromExchange)
 import SatSim.Gen.Producer (kafkaBatchProducer, timeProducer)
+import SatSim.Producer.AMQP (produceBatchesToExchange)
 import SatSim.Quantities (Seconds (..))
 
 data Command
   = ProduceEvery ProducerProperties Int Seconds
   | RunScheduler
   | RabbitMQProducerDemo Text
-  | RabbitMQConsumerDemo Text
+  | RabbitMQConsumerDemo Text (Heartbeat IO)
 
 producerPropertiesParser :: Parser ProducerProperties
 producerPropertiesParser =
@@ -55,11 +58,25 @@ produceEvery =
     <*> option auto (long "time-between-batches" <> short 't' <> metavar "BATCH_INTERVAL")
     <*> (Seconds <$> option auto (long "batch-window-size" <> short 'w' <> metavar "BATCH_SIZE"))
 
+heartbeatParser :: (MonadIO m) => Parser (Heartbeat m)
+heartbeatParser =
+  Heartbeat (liftIO (print ("Consumer alive" :: String))) . Seconds
+    <$> option
+      auto
+      ( long "heartbeat-interval"
+          <> metavar "HEARTBEAT_INTERVAL"
+          <> value 3
+          <> help "Heartbeat interval seconds"
+      )
+
 amqpProducerDemoParser :: Parser Command
 amqpProducerDemoParser = RabbitMQProducerDemo <$> option str (long "exchange-name" <> short 'x' <> metavar "EXCHANGE_NAME")
 
 amqpConsumerDemoParser :: Parser Command
-amqpConsumerDemoParser = RabbitMQConsumerDemo <$> option str (long "exchange-name" <> short 'x' <> metavar "EXCHANGE_NAME")
+amqpConsumerDemoParser =
+  RabbitMQConsumerDemo
+    <$> option str (long "exchange-name" <> short 'x' <> metavar "EXCHANGE_NAME")
+    <*> heartbeatParser
 
 commandParser :: Parser Command
 commandParser =
@@ -92,4 +109,4 @@ main = do
     ProduceEvery kafkaSettings n s -> runProducer kafkaSettings n s
     RunScheduler -> print ("someday" :: String)
     RabbitMQProducerDemo exchangeName -> produceBatchesToExchange 3 300 exchangeName
-    RabbitMQConsumerDemo exchangeName -> consumeBatchesFromExchange exchangeName
+    RabbitMQConsumerDemo exchangeName heartbeat -> consumeBatchesFromExchange exchangeName heartbeat
