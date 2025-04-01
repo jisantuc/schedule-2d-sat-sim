@@ -69,12 +69,16 @@ consumeBatchesFromExchange exchangeName' = do
   declareExchange chan (newExchange {exchangeName = exchangeName', exchangeType = "fanout"})
   (queue, _, _) <- declareQueue chan (newQueue {queueName = "", queueExclusive = True})
   bindQueue chan queue exchangeName' "otherkey"
-  void . forever $ consumeMsgs chan queue Ack callback
+  void $ consumeMsgs chan queue Ack callback
+
+  -- TODO: factor to `heartbeat` of some sort
+  -- In a more realistic application, this would be some kind of heartbeat mechanism
+  void $ forever (threadDelay (30 * 1000000) *> putStrLn "Still alive")
+  closeConnection conn
   where
     callback :: (Message, Envelope) -> IO ()
     callback (msg, envelope) = do
-      print (BL.unpack (msgBody msg))
-      either putStrLn print (eitherDecode (msgBody msg) :: Either String [Schedulable])
+      either putStrLn (print . length) (eitherDecode (msgBody msg) :: Either String [Schedulable])
       ackEnv envelope
 
 amqpDemo :: Text -> IO ()
