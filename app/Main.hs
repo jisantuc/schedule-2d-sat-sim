@@ -33,10 +33,12 @@ import Options.Applicative
     value,
     (<**>),
   )
+import SatSim.Cache (RedisScheduleRepository (RedisScheduleRepository), defaultRedisRepository)
 import SatSim.Consumer.AMQP (Heartbeat (..), consumeBatchesFromExchange)
 import SatSim.Gen.Producer (kafkaBatchProducer, timeProducer)
 import SatSim.Producer.AMQP (produceBatchesToExchange)
 import SatSim.Quantities (Seconds (..))
+import SatSim.Satellite (Satellite (SimpleSatellite), SatelliteName (SatelliteName))
 
 data Command
   = ProduceEvery ProducerProperties Int Seconds
@@ -109,4 +111,12 @@ main = do
     ProduceEvery kafkaSettings n s -> runProducer kafkaSettings n s
     RunScheduler -> print ("someday" :: String)
     RabbitMQProducerDemo exchangeName -> produceBatchesToExchange 3 300 exchangeName
-    RabbitMQConsumerDemo exchangeName heartbeat -> consumeBatchesFromExchange exchangeName heartbeat
+    -- TODO: get redis connection config and satellite config from somewhere
+    RabbitMQConsumerDemo exchangeName heartbeat ->
+      do
+        repository <- defaultRedisRepository
+        consumeBatchesFromExchange
+          (SimpleSatellite 3 (SatelliteName "satellite"))
+          repository
+          exchangeName
+          heartbeat

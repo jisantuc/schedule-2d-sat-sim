@@ -8,7 +8,9 @@ import Control.Monad (forever)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Aeson (eitherDecode)
 import Data.Functor (void)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import Data.These (These (..))
 import Network.AMQP
   ( Ack (..),
     Envelope,
@@ -26,8 +28,11 @@ import Network.AMQP
     openChannel,
     openConnection,
   )
+import SatSim.Algo.Greedy (scheduleOn)
 import SatSim.Quantities (Seconds (..))
+import SatSim.Satellite (Satellite (..))
 import SatSim.Schedulable (Schedulable (..))
+import SatSim.ScheduleRepository (ScheduleId (ScheduleId), ScheduleRepository (..))
 
 data Heartbeat m = Heartbeat {unheartbeat :: m (), interval :: Seconds}
 
@@ -36,13 +41,13 @@ beatForever (Heartbeat {unheartbeat, interval}) =
   void . forever $
     liftIO (threadDelay (floor interval * 1000000)) *> unheartbeat
 
-consumeBatchesFromExchange :: Text -> Heartbeat IO -> IO ()
-consumeBatchesFromExchange exchangeName' hb = do
+consumeBatchesFromExchange :: (ScheduleRepository a) => Satellite -> a -> Text -> Heartbeat IO -> IO ()
+consumeBatchesFromExchange satellite repository exchangeName' hb = do
   conn <- openConnection "127.0.0.1" "/" "guest" "guest"
   chan <- openChannel conn
   declareExchange chan (newExchange {exchangeName = exchangeName', exchangeType = "fanout"})
   (queue, _, _) <- declareQueue chan (newQueue {queueName = "", queueExclusive = True})
-  bindQueue chan queue exchangeName' "otherkey"
+  bindQueue chan queue exchangeName' ""
   void $ consumeMsgs chan queue Ack callback
 
   beatForever hb
@@ -51,9 +56,15 @@ consumeBatchesFromExchange exchangeName' hb = do
   where
     callback :: (Message, Envelope) -> IO ()
     callback (msg, envelope) = do
-      case (eitherDecode (msgBody msg) :: Either String [Schedulable]) of
-        -- TODO: need a satellite from somewhere? and a redis connection
-        Right b -> print . length $ b
+      case eitherDecode (msgBody msg) of
+        Right batch -> do
+          schedule <- fromMaybe mempty <$> readSchedule repository (ScheduleId "schedule-key")
+          let newSchedule = scheduleOn satellite batch schedule
+          -- TODO: print errors
+          case newSchedule of
+            This _ -> putStrLn "nothing scheduled"
+            That sched -> writeSchedule repository (ScheduleId "schedule-key") sched
+            These errs sched -> writeSchedule repository (ScheduleId "schedule-key") sched
         Left e -> putStrLn e
       either putStrLn (print . length) (eitherDecode (msgBody msg) :: Either String [Schedulable])
       ackEnv envelope
