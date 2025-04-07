@@ -60,11 +60,10 @@ consumeBatchesFromExchange satellite repository exchangeName' hb = do
         Right batch -> do
           schedule <- fromMaybe mempty <$> readSchedule repository (ScheduleId "schedule-key")
           let newSchedule = scheduleOn satellite batch schedule
-          -- TODO: print errors
           case newSchedule of
             This _ -> putStrLn "nothing scheduled"
             That sched -> writeSchedule repository (ScheduleId "schedule-key") sched
-            These errs sched -> writeSchedule repository (ScheduleId "schedule-key") sched
+            These _ sched -> writeSchedule repository (ScheduleId "schedule-key") sched
         Left e -> putStrLn e
       either putStrLn (print . length) (eitherDecode (msgBody msg) :: Either String [Schedulable])
       ackEnv envelope

@@ -33,7 +33,6 @@ library
     bytestring,
     conduit,
     hedis,
-    hw-kafka-client,
     interval-index,
     random,
     semigroupoids,
@@ -54,8 +53,8 @@ executable schedule-2d-sat-sim
   build-depends:
     base ^>=4.19,
     conduit,
-    hw-kafka-client,
     optparse-applicative,
+    hedis,
     schedule-2d-sat-sim,
     text,
 

@@ -11,7 +11,7 @@ import Data.Functor (void)
 import Data.IntervalIndex (IntervalIndex)
 import qualified Data.IntervalIndex as IntervalIndex
 import Data.Time (UTCTime)
-import Database.Redis (Connection, checkedConnect, defaultConnectInfo, get, runRedis, set)
+import Database.Redis (ConnectInfo, Connection, checkedConnect, defaultConnectInfo, get, runRedis, set)
 import SatSim.Schedulable (Scheduled)
 import SatSim.ScheduleRepository (ScheduleId (..), ScheduleRepository (..))
 
@@ -43,9 +43,6 @@ writeSchedule conn scheduleId schedule =
       (toStrict . encode $ IntervalIndex.allIntervals schedule)
 
 newtype RedisScheduleRepository = RedisScheduleRepository {conn :: Connection}
-
-defaultRedisRepository :: IO RedisScheduleRepository
-defaultRedisRepository = RedisScheduleRepository <$> checkedConnect defaultConnectInfo
 
 instance ScheduleRepository RedisScheduleRepository where
   readSchedule (RedisScheduleRepository {conn}) scheduleId =
