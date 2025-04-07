@@ -39,7 +39,7 @@ data Heartbeat m = Heartbeat {unheartbeat :: m (), interval :: Seconds}
 beatForever :: (MonadIO m) => Heartbeat m -> m ()
 beatForever (Heartbeat {unheartbeat, interval}) =
   void . forever $
-    liftIO (threadDelay (floor interval * 1000000)) *> unheartbeat
+    unheartbeat *> liftIO (threadDelay (floor interval * 1000000))
 
 consumeBatchesFromExchange :: (ScheduleRepository a) => Satellite -> a -> Text -> Heartbeat IO -> IO ()
 consumeBatchesFromExchange satellite repository exchangeName' hb = do
