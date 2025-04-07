@@ -2,21 +2,16 @@
 
 module Main where
 
-import Control.Monad (forever)
-import Data.Conduit (runConduit, (.|))
-import Data.List (singleton)
-import Kafka.Producer
-  ( ProducerProperties (..),
-    Timeout (..),
-    brokersList,
-    sendTimeout,
-  )
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.Text (Text)
+import Database.Redis (ConnectInfo (..), PortID (PortNumber), defaultConnectInfo, withCheckedConnect)
 import Options.Applicative
   ( Parser,
     auto,
     command,
     execParser,
     fullDesc,
+    help,
     helper,
     hsubparser,
     idm,
@@ -30,48 +25,81 @@ import Options.Applicative
     value,
     (<**>),
   )
-import SatSim.Gen.Producer (kafkaBatchProducer, timeProducer)
+import SatSim.Cache (RedisScheduleRepository (RedisScheduleRepository))
+import SatSim.Consumer.AMQP (Heartbeat (..), consumeBatchesFromExchange)
+import SatSim.Producer.AMQP (produceBatchesToExchange)
 import SatSim.Quantities (Seconds (..))
+import SatSim.Satellite (Satellite (SimpleSatellite), SatelliteName (SatelliteName))
 
 data Command
-  = ProduceEvery ProducerProperties Int Seconds
-  | RunScheduler
+  = RunScheduler
+  | RabbitMQProducerDemo Text
+  | RabbitMQConsumerDemo ConnectInfo Text (Heartbeat IO)
 
-producerPropertiesParser :: Parser ProducerProperties
-producerPropertiesParser =
-  let brokerAddress = option str (long "broker-address" <> metavar "BROKER_PORT" <> value "localhost:9092")
-      brokers = brokersList . singleton <$> brokerAddress
-      timeout = sendTimeout . Timeout <$> option auto (long "send-timeout-ms" <> metavar "SEND_TIMEOUT" <> value 5)
-   in (<>) <$> brokers <*> timeout
+redisConnectInfoParser :: Parser ConnectInfo
+redisConnectInfoParser =
+  ( \host port dbNum auth ->
+      ( defaultConnectInfo
+          { connectHost = host,
+            connectPort = port,
+            connectDatabase = dbNum,
+            connectAuth = auth
+          }
+      )
+  )
+    <$> option str (long "redis-host" <> value "localhost")
+    <*> ( PortNumber
+            <$> option auto (long "redis-port" <> value 6379)
+        )
+    <*> option auto (long "redis-database" <> value 1)
+    <*> option auto (long "redis-password" <> value Nothing)
 
-produceEvery :: Parser Command
-produceEvery =
-  ProduceEvery
-    <$> producerPropertiesParser
-    <*> option auto (long "time-between-batches" <> short 't' <> metavar "BATCH_INTERVAL")
-    <*> (Seconds <$> option auto (long "batch-window-size" <> short 'w' <> metavar "BATCH_SIZE"))
+heartbeatParser :: (MonadIO m) => Parser (Heartbeat m)
+heartbeatParser =
+  Heartbeat (liftIO (print ("Consumer alive" :: String))) . Seconds
+    <$> option
+      auto
+      ( long "heartbeat-interval"
+          <> metavar "HEARTBEAT_INTERVAL"
+          <> value 3
+          <> help "Heartbeat interval seconds"
+      )
+
+amqpProducerDemoParser :: Parser Command
+amqpProducerDemoParser = RabbitMQProducerDemo <$> option str (long "exchange-name" <> short 'x' <> metavar "EXCHANGE_NAME")
+
+amqpConsumerDemoParser :: Parser Command
+amqpConsumerDemoParser =
+  RabbitMQConsumerDemo
+    <$> redisConnectInfoParser
+    <*> option str (long "exchange-name" <> short 'x' <> metavar "EXCHANGE_NAME")
+    <*> heartbeatParser
 
 commandParser :: Parser Command
 commandParser =
   hsubparser
     ( command
-        "producer"
-        ( info
-            produceEvery
-            ( fullDesc
-                <> progDesc "Produce a batch of schedulable tasks every BATCH_INTERVAL seconds"
-            )
-        )
+        "amqp-producer-demo"
+        (info amqpProducerDemoParser (fullDesc <> progDesc "produce to an amqp topic"))
+        <> command
+          "amqp-consumer-demo"
+          (info amqpConsumerDemoParser (fullDesc <> progDesc "consume from an amqp topic"))
     )
     <**> helper
-
-runProducer :: ProducerProperties -> Int -> Seconds -> IO ()
-runProducer kafkaSettings timeBetweenBatches batchWindowSize =
-  forever . runConduit $ (timeProducer timeBetweenBatches .| kafkaBatchProducer kafkaSettings batchWindowSize)
 
 main :: IO ()
 main = do
   cmd <- execParser (info commandParser idm)
   case cmd of
-    ProduceEvery kafkaSettings n s -> runProducer kafkaSettings n s
     RunScheduler -> print ("someday" :: String)
+    RabbitMQProducerDemo exchangeName -> produceBatchesToExchange 3 300 exchangeName
+    RabbitMQConsumerDemo connInfo exchangeName heartbeat ->
+      withCheckedConnect
+        connInfo
+        ( \conn ->
+            consumeBatchesFromExchange
+              (SimpleSatellite 3 (SatelliteName "satellite"))
+              (RedisScheduleRepository conn)
+              exchangeName
+              heartbeat
+        )

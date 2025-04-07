@@ -30,6 +30,7 @@ newtype Seconds = Seconds {unSeconds :: Float}
       Ord,
       Random,
       Real,
+      RealFrac,
       Show,
       ToJSON,
       FromJSON

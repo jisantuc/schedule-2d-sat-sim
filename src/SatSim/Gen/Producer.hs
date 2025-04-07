@@ -5,21 +5,15 @@ module SatSim.Gen.Producer where
 
 import Conduit (sinkNull)
 import Control.Concurrent (threadDelay)
-import Control.Exception (bracket)
 import Control.Monad (replicateM)
-import Data.Aeson (encode)
-import Data.ByteString (toStrict)
 import Data.Conduit (ConduitT, Void, await, yieldM, (.|))
 import qualified Data.Conduit.Combinators as Conduit
-import Data.Functor (void, (<&>))
+import Data.Functor ((<&>))
 import Data.Time (UTCTime, addUTCTime, getCurrentTime)
-import Kafka.Producer (ProducePartition (..), ProducerProperties, closeProducer, newProducer, produceMessage)
-import Kafka.Producer.Types (ProducerRecord (..))
-import qualified Kafka.Types as Kafka
 import SatSim.Quantities (Radians (..), Seconds (..))
 import SatSim.Schedulable (Schedulable (..))
 import SatSim.TargetVector (mkTargetVector)
-import System.Random
+import System.Random (randomRIO)
 
 genSchedulable :: UTCTime -> Seconds -> Int -> IO [Schedulable]
 genSchedulable startingAfter withinNextSeconds howMany =
@@ -50,33 +44,3 @@ batchProducer batchWindowSize =
 
 stdoutBatchProducer :: Seconds -> ConduitT UTCTime Void IO ()
 stdoutBatchProducer seconds = batchProducer seconds .| Conduit.mapM (print . show) .| sinkNull
-
-kafkaBatchProducer :: ProducerProperties -> Seconds -> ConduitT UTCTime Void IO ()
-kafkaBatchProducer props seconds =
-  batchProducer seconds .| toProducerRecord .| Conduit.mapM produce .| sinkNull
-  where
-    toProducerRecord =
-      Conduit.map
-        ( \sched ->
-            ProducerRecord
-              { prValue = Just . toStrict . encode $ sched,
-                prTopic = "schedulable-batches",
-                prPartition = UnassignedPartition,
-                prKey = Nothing,
-                prHeaders = Kafka.headersFromList []
-              }
-        )
-
-    produce message =
-      bracket
-        mkProducer
-        clProducer
-        ( \case
-            Right producer -> void (produceMessage producer message)
-            Left e -> print e
-        )
-
-    mkProducer = newProducer props
-
-    clProducer (Left _) = return ()
-    clProducer (Right prod) = void $ closeProducer prod
