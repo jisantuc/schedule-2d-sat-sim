@@ -6,6 +6,7 @@
 module SatSim.Schedulable
   ( Schedulable (..),
     Scheduled (..),
+    ScheduleId (..),
     ScheduleError (..),
     duration,
     minDuration,
@@ -22,6 +23,8 @@ import Data.Validation (Validation, validate)
 import GHC.Generics (Generic)
 import SatSim.Quantities (Radians (unRadians))
 import SatSim.TargetVector (TargetVector, angleBetween)
+
+newtype ScheduleId = ScheduleId String
 
 data Schedulable = Schedulable
   { vector :: TargetVector,

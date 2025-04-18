@@ -1,14 +1,19 @@
 module SatSim.ScheduleRepository where
 
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Trans.Reader (ReaderT, ask)
 import Data.IntervalIndex (IntervalIndex)
 import Data.Time (UTCTime)
-import SatSim.Schedulable (Scheduled)
+import SatSim.Cache (RedisScheduleRepository (..))
+import qualified SatSim.Cache as Cache
+import SatSim.Schedulable (ScheduleId, Scheduled)
 
 type Schedule = IntervalIndex UTCTime Scheduled
 
-newtype ScheduleId = ScheduleId String
+class ScheduleRepository m where
+  readSchedule :: ScheduleId -> m (Maybe Schedule)
+  writeSchedule :: ScheduleId -> Schedule -> m ()
 
-class ScheduleRepository a where
-  readSchedule :: (MonadIO m) => a -> ScheduleId -> m (Maybe Schedule)
-  writeSchedule :: (MonadIO m) => a -> ScheduleId -> Schedule -> m ()
+instance ScheduleRepository (ReaderT RedisScheduleRepository IO) where
+  readSchedule scheduleId = do
+    (RedisScheduleRepository conn) <- ask
+    readSchedule conn scheduleId

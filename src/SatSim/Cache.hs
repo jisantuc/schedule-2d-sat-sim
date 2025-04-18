@@ -1,8 +1,5 @@
-{-# LANGUAGE NamedFieldPuns #-}
-
 module SatSim.Cache where
 
-import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Aeson (eitherDecodeStrict', encode)
 import Data.ByteString (toStrict)
 import qualified Data.ByteString as BS
@@ -11,9 +8,8 @@ import Data.Functor (void)
 import Data.IntervalIndex (IntervalIndex)
 import qualified Data.IntervalIndex as IntervalIndex
 import Data.Time (UTCTime)
-import Database.Redis (ConnectInfo, Connection, checkedConnect, defaultConnectInfo, get, runRedis, set)
-import SatSim.Schedulable (Scheduled)
-import SatSim.ScheduleRepository (ScheduleId (..), ScheduleRepository (..))
+import Database.Redis (Connection, get, runRedis, set)
+import SatSim.Schedulable (ScheduleId (..), Scheduled)
 
 intervalIndexFromByteString :: BS.ByteString -> Maybe (IntervalIndex UTCTime Scheduled)
 intervalIndexFromByteString bs = case eitherDecodeStrict' bs of
@@ -42,10 +38,4 @@ writeSchedule conn scheduleId schedule =
       (scheduleIdKey scheduleId)
       (toStrict . encode $ IntervalIndex.allIntervals schedule)
 
-newtype RedisScheduleRepository = RedisScheduleRepository {conn :: Connection}
-
-instance ScheduleRepository RedisScheduleRepository where
-  readSchedule (RedisScheduleRepository {conn}) scheduleId =
-    liftIO $ SatSim.Cache.readSchedule conn scheduleId
-  writeSchedule (RedisScheduleRepository {conn}) scheduleId schedule =
-    liftIO $ SatSim.Cache.writeSchedule conn scheduleId schedule
+newtype RedisScheduleRepository = RedisScheduleRepository {unScheduleRepository :: Connection}
