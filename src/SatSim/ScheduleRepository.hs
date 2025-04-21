@@ -1,5 +1,10 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant bracket" #-}
+
 module SatSim.ScheduleRepository where
 
+import Conduit (MonadIO, liftIO)
 import Control.Monad.Trans.Reader (ReaderT, ask)
 import Data.IntervalIndex (IntervalIndex)
 import Data.Time (UTCTime)
@@ -13,7 +18,9 @@ class ScheduleRepository m where
   readSchedule :: ScheduleId -> m (Maybe Schedule)
   writeSchedule :: ScheduleId -> Schedule -> m ()
 
-instance ScheduleRepository (ReaderT RedisScheduleRepository IO) where
+instance (MonadIO m) => ScheduleRepository (ReaderT RedisScheduleRepository m) where
   readSchedule scheduleId = do
     (RedisScheduleRepository conn) <- ask
-    readSchedule conn scheduleId
+    liftIO $ Cache.readSchedule conn scheduleId
+  writeSchedule scheduleId schedule =
+    ask >>= \(RedisScheduleRepository conn) -> (liftIO $ Cache.writeSchedule conn scheduleId schedule)

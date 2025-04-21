@@ -3,6 +3,7 @@
 module Main where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Trans.Reader (runReaderT)
 import Data.Text (Text)
 import Database.Redis (ConnectInfo (..), PortID (PortNumber), defaultConnectInfo, withCheckedConnect)
 import Options.Applicative
@@ -96,10 +97,11 @@ main = do
     RabbitMQConsumerDemo connInfo exchangeName heartbeat ->
       withCheckedConnect
         connInfo
-        ( \conn ->
-            consumeBatchesFromExchange
-              (SimpleSatellite 3 (SatelliteName "satellite"))
-              (RedisScheduleRepository conn)
-              exchangeName
-              heartbeat
+        ( runReaderT
+            ( consumeBatchesFromExchange
+                (SimpleSatellite 3 (SatelliteName "satellite"))
+                exchangeName
+                heartbeat
+            )
+            . RedisScheduleRepository
         )
