@@ -57,6 +57,7 @@ consumeBatchesFromExchange satellite exchangeName' hb = do
     declareExchange chan (newExchange {exchangeName = exchangeName', exchangeType = "fanout"})
     (queue, _, _) <- declareQueue chan (newQueue {queueName = "", queueExclusive = True})
     bindQueue chan queue exchangeName' ""
+    -- Stuck! callback has to be -> IO (), but I want to work in `m`, and `consumeMsg` fixes the effect type to `IO`
     void $ consumeMsgs chan queue Ack callback
 
     beatForever hb
