@@ -20,7 +20,6 @@ import Network.AMQP
     ackEnv,
     bindQueue,
     closeConnection,
-    consumeMsgs,
     declareExchange,
     declareQueue,
     newExchange,
@@ -28,11 +27,14 @@ import Network.AMQP
     openChannel,
     openConnection,
   )
+import Network.AMQP.Streamly (consume)
 import SatSim.Algo.Greedy (scheduleOn)
 import SatSim.Quantities (Seconds (..))
 import SatSim.Satellite (Satellite (..))
 import SatSim.Schedulable (Schedulable (..))
 import SatSim.ScheduleRepository (ScheduleId (ScheduleId), ScheduleRepository (..))
+import Streamly.Data.Fold (drive)
+import qualified Streamly.Data.Fold as Stream
 
 data Heartbeat m = Heartbeat {unheartbeat :: m (), interval :: Seconds}
 
@@ -48,12 +50,11 @@ consumeBatchesFromExchange satellite repository exchangeName' hb = do
   declareExchange chan (newExchange {exchangeName = exchangeName', exchangeType = "fanout"})
   (queue, _, _) <- declareQueue chan (newQueue {queueName = "", queueExclusive = True})
   bindQueue chan queue exchangeName' ""
-  void $ consumeMsgs chan queue Ack callback
-
-  beatForever hb
+  void $ drive (consume chan queue Ack) handler
 
   closeConnection conn
   where
+    handler = Stream.tee (Stream.foldMapM callback) (Stream.foldMapM (\_ -> liftIO (unheartbeat hb )))
     callback :: (Message, Envelope) -> IO ()
     callback (msg, envelope) = do
       case eitherDecode (msgBody msg) of

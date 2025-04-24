@@ -29,6 +29,7 @@ library
   build-depends:
     aeson,
     amqp,
+    amqp-streamly,
     base ^>=4.19,
     bytestring,
     conduit,
@@ -36,6 +37,7 @@ library
     interval-index,
     random,
     semigroupoids,
+    streamly-core,
     text,
     these,
     time,
