@@ -23,7 +23,7 @@ jobs:
             experimental-features = nix-command flakes
             trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
             substituters = https://cache.iog.io
-      - uses: cachix/cachix-action@v16
+      - uses: cachix/cachix-action@v15
         with:
           name: jisantuc
           authToken: '${{ secrets.CACHIX_TOKEN }}'
