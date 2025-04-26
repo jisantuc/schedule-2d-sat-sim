@@ -3,9 +3,14 @@
 module Main where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Trans.Reader (ReaderT (runReaderT))
+import Control.Monad.Trans.Reader (runReaderT)
 import Data.Text (Text)
-import Database.Redis (ConnectInfo (..), PortID (PortNumber), defaultConnectInfo, withCheckedConnect)
+import Database.Redis
+  ( ConnectInfo (..),
+    PortID (..),
+    defaultConnectInfo,
+    withCheckedConnect,
+  )
 import Options.Applicative
   ( Parser,
     auto,
@@ -30,7 +35,7 @@ import SatSim.Cache (RedisScheduleRepository (RedisScheduleRepository))
 import SatSim.Consumer.AMQP (Heartbeat (..), consumeBatchesFromExchange)
 import SatSim.Producer.AMQP (produceBatchesToExchange)
 import SatSim.Quantities (Seconds (..))
-import SatSim.Satellite (Satellite (SimpleSatellite), SatelliteName (SatelliteName))
+import SatSim.Satellite (Satellite (..), SatelliteName (..))
 
 data Command
   = RunScheduler
