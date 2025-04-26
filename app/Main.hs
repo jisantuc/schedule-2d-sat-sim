@@ -3,6 +3,7 @@
 module Main where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Trans.Reader (ReaderT (runReaderT))
 import Data.Text (Text)
 import Database.Redis (ConnectInfo (..), PortID (PortNumber), defaultConnectInfo, withCheckedConnect)
 import Options.Applicative
@@ -51,7 +52,7 @@ redisConnectInfoParser =
     <*> ( PortNumber
             <$> option auto (long "redis-port" <> value 6379)
         )
-    <*> option auto (long "redis-database" <> value 1)
+    <*> option auto (long "redis-database" <> value 0)
     <*> option auto (long "redis-password" <> value Nothing)
 
 heartbeatParser :: (MonadIO m) => Parser (Heartbeat m)
@@ -96,10 +97,11 @@ main = do
     RabbitMQConsumerDemo connInfo exchangeName heartbeat ->
       withCheckedConnect
         connInfo
-        ( \conn ->
-            consumeBatchesFromExchange
-              (SimpleSatellite 3 (SatelliteName "satellite"))
-              (RedisScheduleRepository conn)
-              exchangeName
-              heartbeat
+        ( runReaderT
+            ( consumeBatchesFromExchange
+                (SimpleSatellite 3 (SatelliteName "satellite"))
+                exchangeName
+                heartbeat
+            )
+            . RedisScheduleRepository
         )

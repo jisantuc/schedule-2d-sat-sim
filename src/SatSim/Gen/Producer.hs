@@ -1,15 +1,8 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
-
 module SatSim.Gen.Producer where
 
-import Conduit (sinkNull)
-import Control.Concurrent (threadDelay)
 import Control.Monad (replicateM)
-import Data.Conduit (ConduitT, Void, await, yieldM, (.|))
-import qualified Data.Conduit.Combinators as Conduit
 import Data.Functor ((<&>))
-import Data.Time (UTCTime, addUTCTime, getCurrentTime)
+import Data.Time (UTCTime, addUTCTime)
 import SatSim.Quantities (Radians (..), Seconds (..))
 import SatSim.Schedulable (Schedulable (..))
 import SatSim.TargetVector (mkTargetVector)
@@ -30,17 +23,3 @@ genSchedulable startingAfter withinNextSeconds howMany =
               arrivalOrder = 1
             }
    in generator <&> (\sched -> zipWith (\s idx -> s {arrivalOrder = idx}) sched [1 ..])
-
-timeProducer :: Int -> ConduitT () UTCTime IO ()
-timeProducer interval = Conduit.repeatM (threadDelay (interval * 1000000) *> getCurrentTime)
-
-batchProducer :: Seconds -> ConduitT UTCTime [Schedulable] IO ()
-batchProducer batchWindowSize =
-  await >>= \case
-    Just currentTime -> yieldM $ do
-      howManyInBatch <- randomRIO (1, 20)
-      genSchedulable currentTime batchWindowSize howManyInBatch
-    Nothing -> fail "no more inputs"
-
-stdoutBatchProducer :: Seconds -> ConduitT UTCTime Void IO ()
-stdoutBatchProducer seconds = batchProducer seconds .| Conduit.mapM (print . show) .| sinkNull
