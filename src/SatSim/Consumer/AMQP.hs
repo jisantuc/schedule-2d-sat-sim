@@ -9,7 +9,6 @@ import Control.Monad.Catch (MonadCatch)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Aeson (eitherDecode)
 import Data.Functor (void)
-import Data.IntervalIndex (allIntervals)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.These (These (..))
@@ -32,8 +31,8 @@ import Network.AMQP
 import Network.AMQP.Streamly (consume)
 import SatSim.Algo.Greedy (scheduleOn)
 import SatSim.Quantities (Seconds (..))
-import SatSim.Satellite (Satellite (..), ScheduleId (..))
-import SatSim.Schedulable (Schedulable (..))
+import SatSim.Satellite (Satellite (..))
+import SatSim.Schedulable (Schedulable (..), ScheduleId (..))
 import SatSim.ScheduleRepository (ScheduleRepository (..))
 import Streamly.Data.Fold (drive)
 import qualified Streamly.Data.Fold as Stream
@@ -65,28 +64,18 @@ consumeBatchesFromExchange satellite exchangeName' hb = do
   where
     handler :: (MonadIO m, ScheduleRepository m) => Stream.Fold m (Message, Envelope) ((), ())
     handler = Stream.tee (Stream.foldMapM callback) (Stream.foldMapM (\_ -> liftIO (unheartbeat hb)))
+
     callback :: (ScheduleRepository m, MonadIO m) => (Message, Envelope) -> m ()
     callback (msg, envelope) =
       let scheduleNewCandidates batch = do
             schedule <- fromMaybe mempty <$> readSchedule (ScheduleId "schedule-key")
-            liftIO . putStrLn $ "=================="
-            liftIO . print $ "Size of batch: " <> (show . length) batch
-            liftIO . print $
-              "Size of incoming schedule: "
-                <> (show . length . allIntervals $ schedule)
             let newSchedule = scheduleOn satellite batch schedule
             case newSchedule of
-              This errs -> liftIO $ do
-                print $ "Number of errs: " <> (show . length $ errs)
+              This _ -> liftIO $ do
                 putStrLn "nothing scheduled"
               That sched -> do
-                liftIO $ putStrLn "Writing new schedule"
-                liftIO . print $ "Size of new sched: " <> (show . length . allIntervals $ sched)
                 writeSchedule (ScheduleId "schedule-key") sched
-              These errs sched -> do
-                liftIO . print $ "Number of errs: " <> (show . length $ errs)
-                liftIO $ putStrLn "Writing new schedule"
-                liftIO . print $ "Size of new sched: " <> (show . length . allIntervals $ sched)
+              These _ sched -> do
                 writeSchedule (ScheduleId "schedule-key") sched
        in do
             either

@@ -3,15 +3,12 @@
 module SatSim.Satellite
   ( Satellite (..),
     SatelliteName (..),
-    ScheduleId(..),
     completeCircleTime,
     rotationRate,
   )
 where
 
 import SatSim.Quantities (Radians (..), Seconds (..))
-
-newtype ScheduleId = ScheduleId String
 
 newtype SatelliteName = SatelliteName {unSatelliteName :: String} deriving (Eq, Show)
 
