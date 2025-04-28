@@ -74,6 +74,7 @@ test-suite schedule-2d-sat-sim-test
     SatSim.Gen.ProducerSpec
     SatSim.SchedulableSpec
     SatSim.TargetVectorSpec
+    SatSim.TestLib
 
   type: exitcode-stdio-1.0
   hs-source-dirs: test

@@ -1,6 +1,13 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module SatSim.Cache (RedisScheduleRepository (..), readSchedule, writeSchedule, LocalScheduleRepository (..)) where
+module SatSim.Cache
+  ( RedisScheduleRepository (..),
+    readSchedule,
+    writeSchedule,
+    LocalScheduleRepository (..),
+    scheduleIdKey,
+  )
+where
 
 import Control.Concurrent (MVar)
 import Data.Aeson (eitherDecodeStrict', encode)

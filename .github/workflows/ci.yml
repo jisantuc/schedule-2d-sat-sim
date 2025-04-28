@@ -15,6 +15,10 @@ jobs:
         image: redis:7
         ports: 
           - 6379:6379
+      rabbitMQ:
+        image: rabbitmq:4-alpine
+        ports:
+          - 5672:5672
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
