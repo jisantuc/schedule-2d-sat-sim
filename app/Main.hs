@@ -11,6 +11,7 @@ import Database.Redis
     defaultConnectInfo,
     withCheckedConnect,
   )
+import Network.AMQP (openChannel, openConnection)
 import Options.Applicative
   ( Parser,
     auto,
@@ -98,7 +99,10 @@ main = do
   cmd <- execParser (info commandParser idm)
   case cmd of
     RunScheduler -> print ("someday" :: String)
-    RabbitMQProducerDemo exchangeName -> produceBatchesToExchange 3 300 exchangeName
+    RabbitMQProducerDemo exchangeName -> do
+      conn <- openConnection "127.0.0.1" "/" "guest" "guest"
+      chan <- openChannel conn
+      runReaderT (produceBatchesToExchange 3 300 exchangeName) chan
     RabbitMQConsumerDemo connInfo exchangeName heartbeat ->
       withCheckedConnect
         connInfo
