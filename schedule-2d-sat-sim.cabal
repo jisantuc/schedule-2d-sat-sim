@@ -36,6 +36,7 @@ library
     , exceptions
     , hedis
     , interval-index
+    , monad-control
     , random
     , semigroupoids
     , streamly-core
