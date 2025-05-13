@@ -39,8 +39,8 @@ library
     , monad-control
     , random
     , semigroupoids
-    , streamly-core
     , streamly
+    , streamly-core
     , text
     , these
     , time

@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
 ormolu -i **/*.hs
+cabal-fmt -i *.cabal
