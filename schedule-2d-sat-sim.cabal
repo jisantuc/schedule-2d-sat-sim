@@ -39,6 +39,7 @@ library
     , random
     , semigroupoids
     , streamly-core
+    , streamly
     , text
     , these
     , time

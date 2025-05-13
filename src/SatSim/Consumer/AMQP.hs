@@ -4,11 +4,9 @@
 module SatSim.Consumer.AMQP where
 
 import Control.Concurrent (threadDelay)
-import Control.Monad (forever)
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Aeson (eitherDecode)
-import Data.Functor (void)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.These (These (..))
@@ -34,16 +32,14 @@ import SatSim.Quantities (Seconds (..))
 import SatSim.Satellite (Satellite (..))
 import SatSim.Schedulable (Schedulable (..), ScheduleId (..))
 import SatSim.ScheduleRepository (ScheduleRepository (..))
-import Streamly.Data.Fold (drive)
-import qualified Streamly.Data.Fold as Stream
 import Streamly.Data.Stream (finallyIO)
+import qualified Streamly.Data.Stream as Stream
 
 data Heartbeat m = Heartbeat {unheartbeat :: m (), interval :: Seconds}
 
-beatForever :: (MonadIO m) => Heartbeat m -> m ()
+beatForever :: (MonadIO m) => Heartbeat m -> Stream.Stream m ()
 beatForever (Heartbeat {unheartbeat, interval}) =
-  void . forever $
-    unheartbeat *> liftIO (threadDelay (floor interval * 1000000))
+  Stream.repeatM (unheartbeat *> liftIO (threadDelay (floor interval * 1000000)))
 
 consumeBatchesFromExchange ::
   (ScheduleRepository m, MonadIO m, MonadCatch m) =>
@@ -60,11 +56,10 @@ consumeBatchesFromExchange satellite exchangeName' hb = do
     bindQueue chan queue exchangeName' ""
     pure (conn, chan, queue)
 
-  void $ drive (finallyIO (closeConnection conn) $ consume chan queue Ack) handler
+  let beat = beatForever hb
+  let consumer = finallyIO (closeConnection conn) (Stream.mapM callback (consume chan queue Ack))
+  liftIO $ print "oh no"
   where
-    handler :: (MonadIO m, ScheduleRepository m) => Stream.Fold m (Message, Envelope) ((), ())
-    handler = Stream.tee (Stream.foldMapM callback) (Stream.foldMapM (\_ -> liftIO (unheartbeat hb)))
-
     callback :: (ScheduleRepository m, MonadIO m) => (Message, Envelope) -> m ()
     callback (msg, envelope) =
       let scheduleNewCandidates batch = do
