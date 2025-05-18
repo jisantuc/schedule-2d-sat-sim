@@ -3,11 +3,12 @@ module SatSim.Consumer.AMQPSpec where
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (race)
 import SatSim.Consumer.AMQP (Heartbeat (Heartbeat), beatForever)
+import Streamly.Data.Fold (drain)
+import Streamly.Data.Stream (fold)
 import System.IO.Silently (capture_)
 import Test.Hspec (Spec, describe, it, pending, shouldBe)
 
-
--- TODO: https://hackage.haskell.org/package/sydtest-amqp-0.1.0.0/docs/Test-Syd-AMQP.html ??
+-- TODO: #16: https://github.com/jisantuc/schedule-2d-sat-sim/issues/16
 spec :: Spec
 spec = describe "AMQPSpec" $ do
   describe "Consumer" $ do
@@ -21,7 +22,7 @@ spec = describe "AMQPSpec" $ do
         output <-
           capture_
             ( race
-                (beatForever (Heartbeat (putStrLn "a") 2))
+                (fold drain $ beatForever (Heartbeat (putStrLn "a") 2))
                 (threadDelay 3000000)
             )
         (length . lines $ output) `shouldBe` 2

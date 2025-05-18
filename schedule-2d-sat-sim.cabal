@@ -94,6 +94,7 @@ test-suite schedule-2d-sat-sim-test
     , quickcheck-instances
     , schedule-2d-sat-sim
     , silently
+    , streamly-core
     , these
     , time
     , validation

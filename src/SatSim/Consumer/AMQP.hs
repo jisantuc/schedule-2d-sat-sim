@@ -4,6 +4,7 @@
 
 module SatSim.Consumer.AMQP where
 
+import Control.Concurrent (threadDelay)
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.Trans.Control (MonadBaseControl)
@@ -12,7 +13,6 @@ import Data.IntervalIndex (allIntervals)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.These (These (..))
-import GHC.Float (float2Double)
 import Network.AMQP
   ( Ack (..),
     ExchangeOpts (..),
@@ -47,7 +47,7 @@ liftHeartbeat hb@(Heartbeat {interval}) =
 
 beatForever :: (MonadIO m) => Heartbeat m -> Stream.Stream m ()
 beatForever (Heartbeat {unheartbeat, interval}) =
-  Stream.delay (float2Double . unSeconds $ interval) (Stream.repeatM unheartbeat)
+  Stream.repeatM $ unheartbeat *> liftIO (threadDelay . floor . unSeconds . (* 1000000) $ interval)
 
 consumeBatchesFromExchange ::
   (ScheduleRepository m, MonadIO m, MonadCatch m, MonadBaseControl IO m) =>
@@ -66,7 +66,8 @@ consumeBatchesFromExchange satellite exchangeName' hb = do
 
   let beat = beatForever . liftHeartbeat $ hb
   let bracketed = finallyIO (closeConnection conn) (Stream.mapM callback $ consume chan queue Ack)
-  Stream.fold Fold.drain $ parMergeBy (maxThreads 4) compare beat bracketed
+  let heartbeatingConsumer = parMergeBy (maxThreads 4) (const . const $ EQ) beat bracketed
+  Stream.fold Fold.drain heartbeatingConsumer
   where
     callback (msg, envelope) =
       let scheduleNewCandidates batch = do
