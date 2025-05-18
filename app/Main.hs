@@ -102,7 +102,7 @@ main = do
     RabbitMQProducerDemo exchangeName -> do
       conn <- openConnection "127.0.0.1" "/" "guest" "guest"
       chan <- openChannel conn
-      runReaderT (produceBatchesToExchange 3 300 exchangeName) chan
+      produceBatchesToExchange chan 3 300 exchangeName
     RabbitMQConsumerDemo connInfo exchangeName heartbeat ->
       withCheckedConnect
         connInfo
