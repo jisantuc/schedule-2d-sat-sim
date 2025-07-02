@@ -15,18 +15,23 @@ jobs:
         image: redis:7
         ports: 
           - 6379:6379
+      rabbitMQ:
+        image: rabbitmq:4-alpine
+        ports:
+          - 5672:5672
     steps:
       - uses: actions/checkout@v4
-      - uses: nixbuild/nix-quick-install-action@v29
+      - uses: cachix/install-nix-action@v31
         with:
-          nix_conf: |
-            experimental-features = nix-command flakes
-            trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
-            substituters = https://cache.iog.io
-      - uses: DeterminateSystems/magic-nix-cache-action@v8
+          nix_path: nixpkgs=channel:nixos-unstable
+      - uses: cachix/cachix-action@v16
+        with:
+          name: jisantuc
+          authToken: '${{ secrets.CACHIX_TOKEN }}'
       - run: nix develop .#ci --command ./scripts/test
         env:
           ENV: ci
+      - run: nix build
       - name: Generate coverage report
         uses: 8c6794b6/hpc-codecov-action@v4
         with:
@@ -37,6 +42,7 @@ jobs:
             SatSim.Gen.ProducerSpec
             SatSim.SchedulableSpec,
             SatSim.TargetVectorSpec
-            SatSim.Consumer.AMQPSpec
+            SatSim.Consumer.AMQPSpec,
+            SatSim.ScheduleRepositorySpec
       - name: Send coverage report
         uses: codecov/codecov-action@v5

@@ -3,8 +3,15 @@
 module Main where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Trans.Reader (runReaderT)
 import Data.Text (Text)
-import Database.Redis (ConnectInfo (..), PortID (PortNumber), defaultConnectInfo, withCheckedConnect)
+import Database.Redis
+  ( ConnectInfo (..),
+    PortID (..),
+    defaultConnectInfo,
+    withCheckedConnect,
+  )
+import Network.AMQP (openChannel, openConnection)
 import Options.Applicative
   ( Parser,
     auto,
@@ -29,7 +36,7 @@ import SatSim.Cache (RedisScheduleRepository (RedisScheduleRepository))
 import SatSim.Consumer.AMQP (Heartbeat (..), consumeBatchesFromExchange)
 import SatSim.Producer.AMQP (produceBatchesToExchange)
 import SatSim.Quantities (Seconds (..))
-import SatSim.Satellite (Satellite (SimpleSatellite), SatelliteName (SatelliteName))
+import SatSim.Satellite (Satellite (..), SatelliteName (..))
 
 data Command
   = RunScheduler
@@ -51,7 +58,7 @@ redisConnectInfoParser =
     <*> ( PortNumber
             <$> option auto (long "redis-port" <> value 6379)
         )
-    <*> option auto (long "redis-database" <> value 1)
+    <*> option auto (long "redis-database" <> value 0)
     <*> option auto (long "redis-password" <> value Nothing)
 
 heartbeatParser :: (MonadIO m) => Parser (Heartbeat m)
@@ -92,14 +99,18 @@ main = do
   cmd <- execParser (info commandParser idm)
   case cmd of
     RunScheduler -> print ("someday" :: String)
-    RabbitMQProducerDemo exchangeName -> produceBatchesToExchange 3 300 exchangeName
+    RabbitMQProducerDemo exchangeName -> do
+      conn <- openConnection "127.0.0.1" "/" "guest" "guest"
+      chan <- openChannel conn
+      produceBatchesToExchange chan 3 300 exchangeName
     RabbitMQConsumerDemo connInfo exchangeName heartbeat ->
       withCheckedConnect
         connInfo
-        ( \conn ->
-            consumeBatchesFromExchange
-              (SimpleSatellite 3 (SatelliteName "satellite"))
-              (RedisScheduleRepository conn)
-              exchangeName
-              heartbeat
+        ( runReaderT
+            ( consumeBatchesFromExchange
+                (SimpleSatellite 3 (SatelliteName "satellite"))
+                exchangeName
+                heartbeat
+            )
+            . RedisScheduleRepository
         )

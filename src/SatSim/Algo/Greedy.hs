@@ -6,7 +6,6 @@ import Data.Foldable (foldMap', foldl')
 import Data.Functor.Alt ((<!>))
 import Data.Interval (IntervalLit (..))
 import Data.IntervalIndex (IntervalIndex, touching)
-import qualified Data.IntervalIndex as IntervalIndex
 import Data.List (sortOn)
 import Data.These (These (..))
 import Data.Time (UTCTime)
@@ -136,5 +135,5 @@ scheduleOn satellite candidates existingSchedule =
               (That schedule) -> scheduleOne satellite candidate schedule
               These errs schedule -> This errs <> scheduleOne satellite candidate schedule
         )
-        (That IntervalIndex.empty)
+        (That existingSchedule)
         sortedCandidates

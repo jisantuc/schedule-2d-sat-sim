@@ -11,8 +11,10 @@
         let
           pkgs = nixpkgs.legacyPackages.${system};
           compiler = "ghc98";
-          haskellPackages = pkgs.haskell.packages.${compiler}.extend (final: prev: {
+          compilerPackages = pkgs.haskell.packages.${compiler};
+          haskellPackages = compilerPackages.extend (final: prev: {
             interval-index = interval-index.packages.${system}.default;
+            amqp-streamly = pkgs.haskell.lib.dontCheck compilerPackages.amqp-streamly;
           });
           devDependencies = with haskellPackages; [
             cabal-fmt

@@ -1,19 +1,19 @@
 cabal-version: 3.0
-name: schedule-2d-sat-sim
-version: 0.1.0.0
-license: MIT
-license-file: LICENSE
-author: James Santucci
-maintainer: james.santucci@gmail.com
-copyright: 2024
-category: Game
-build-type: Simple
+name:          schedule-2d-sat-sim
+version:       0.1.0.0
+license:       MIT
+license-file:  LICENSE
+author:        James Santucci
+maintainer:    james.santucci@gmail.com
+copyright:     2025
+category:      Game
+build-type:    Simple
 
 common warnings
   ghc-options: -Wall
 
 library
-  import: warnings
+  import:           warnings
   exposed-modules:
     SatSim.Algo.Greedy
     SatSim.Cache
@@ -22,47 +22,54 @@ library
     SatSim.Producer.AMQP
     SatSim.Quantities
     SatSim.Satellite
-    SatSim.ScheduleRepository
     SatSim.Schedulable
+    SatSim.ScheduleRepository
     SatSim.TargetVector
 
   build-depends:
-    aeson,
-    amqp,
-    base ^>=4.19,
-    bytestring,
-    conduit,
-    hedis,
-    interval-index,
-    random,
-    semigroupoids,
-    text,
-    these,
-    time,
-    transformers,
-    validation,
+    , aeson
+    , amqp
+    , amqp-streamly
+    , base            ^>=4.19
+    , bytestring
+    , containers
+    , exceptions
+    , hedis
+    , interval-index
+    , monad-control
+    , random
+    , semigroupoids
+    , streamly
+    , streamly-core
+    , text
+    , these
+    , time
+    , transformers
+    , validation
 
-  hs-source-dirs: src
+  hs-source-dirs:   src
   default-language: Haskell2010
 
 executable schedule-2d-sat-sim
-  import: warnings
-  main-is: Main.hs
+  import:           warnings
+  main-is:          Main.hs
+
   -- other-modules:
   -- other-extensions:
   build-depends:
-    base ^>=4.19,
-    conduit,
-    optparse-applicative,
-    hedis,
-    schedule-2d-sat-sim,
-    text,
+    , amqp
+    , base                  ^>=4.19
+    , hedis
+    , optparse-applicative
+    , schedule-2d-sat-sim
+    , text
+    , transformers
 
-  hs-source-dirs: app
+  hs-source-dirs:   app
   default-language: Haskell2010
 
 test-suite schedule-2d-sat-sim-test
-  import: warnings
+  import:           warnings
   default-language: Haskell2010
   other-modules:
     SatSim.Algo.GreedySpec
@@ -70,23 +77,26 @@ test-suite schedule-2d-sat-sim-test
     SatSim.Consumer.AMQPSpec
     SatSim.Gen.ProducerSpec
     SatSim.SchedulableSpec
+    SatSim.ScheduleRepositorySpec
     SatSim.TargetVectorSpec
+    SatSim.TestLib
 
-  type: exitcode-stdio-1.0
-  hs-source-dirs: test
-  main-is: Spec.hs
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   test
+  main-is:          Spec.hs
   build-depends:
-    QuickCheck,
-    async,
-    base ^>=4.19,
-    bytestring,
-    conduit,
-    hedis,
-    hspec,
-    interval-index,
-    quickcheck-instances,
-    schedule-2d-sat-sim,
-    silently,
-    these,
-    time,
-    validation,
+    , async
+    , base                  ^>=4.19
+    , bytestring
+    , hedis
+    , hspec
+    , interval-index
+    , QuickCheck
+    , quickcheck-instances
+    , schedule-2d-sat-sim
+    , silently
+    , streamly-core
+    , these
+    , time
+    , transformers
+    , validation
