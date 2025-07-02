@@ -42,6 +42,7 @@ jobs:
             SatSim.Gen.ProducerSpec
             SatSim.SchedulableSpec,
             SatSim.TargetVectorSpec
-            SatSim.Consumer.AMQPSpec
+            SatSim.Consumer.AMQPSpec,
+            SatSim.ScheduleRepositorySpec
       - name: Send coverage report
         uses: codecov/codecov-action@v5

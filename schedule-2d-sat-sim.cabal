@@ -77,6 +77,7 @@ test-suite schedule-2d-sat-sim-test
     SatSim.Consumer.AMQPSpec
     SatSim.Gen.ProducerSpec
     SatSim.SchedulableSpec
+    SatSim.ScheduleRepositorySpec
     SatSim.TargetVectorSpec
     SatSim.TestLib
 
@@ -97,4 +98,5 @@ test-suite schedule-2d-sat-sim-test
     , streamly-core
     , these
     , time
+    , transformers
     , validation
