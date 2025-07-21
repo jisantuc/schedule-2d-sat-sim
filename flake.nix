@@ -29,7 +29,7 @@
             redis
           ]);
         in
-        {
+        rec {
           devShells.default = haskellPackages.shellFor {
             packages = ps: [ (ps.callCabal2nix "schedule-2d-sat-sim" ./. { }) ];
             nativeBuildInputs = devDependencies;
@@ -43,6 +43,12 @@
           };
 
           packages.default = haskellPackages.callCabal2nix "schedule-2d-sat-sim" ./. { };
+
+          containerImage = pkgs.dockerTools.buildLayeredImage {
+            name = "jisantuc/schedule-2d-sat-sim";
+            tag = "latest";
+            config.Cmd =  "${packages.default}/bin/schedule-2d-sat-sim";
+          };
         }
       );
 }
