@@ -2,7 +2,8 @@ name: CI
 on:
   push:
     branches:
-      main
+      - main
+      - feat/js/image-publication
     tags:
       - v*
 jobs:
