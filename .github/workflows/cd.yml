@@ -1,4 +1,4 @@
-name: CI
+name: Container image publication
 on:
   push:
     branches:
