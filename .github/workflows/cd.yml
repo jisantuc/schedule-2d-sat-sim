@@ -25,7 +25,7 @@ jobs:
         env:
           ENV: ci
       - name: Load container image
-        run: podman load < ./result
+        run: podman load -i ./result
       - name: Push to registry
         uses: redhat-actions/push-to-registry@v2
         with:
