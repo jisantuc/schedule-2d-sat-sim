@@ -21,11 +21,9 @@ jobs:
         with:
           name: jisantuc
           authToken: '${{ secrets.CACHIX_TOKEN }}'
-      - run: nix build .#containerImage.x86_64-linux
+      - run: nix build .#containerImage.x86_64-linux | podman load
         env:
           ENV: ci
-      - name: Load container image
-        run: podman load -i ./result
       - name: Push to registry
         uses: redhat-actions/push-to-registry@v2
         with:

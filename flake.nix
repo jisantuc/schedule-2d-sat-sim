@@ -44,7 +44,7 @@
 
           packages.default = haskellPackages.callCabal2nix "schedule-2d-sat-sim" ./. { };
 
-          containerImage = pkgs.dockerTools.buildLayeredImage {
+          containerImage = pkgs.dockerTools.streamLayeredImage {
             name = "jisantuc/schedule-2d-sat-sim";
             tag = "latest";
             config.Cmd =  "${packages.default}/bin/schedule-2d-sat-sim";
