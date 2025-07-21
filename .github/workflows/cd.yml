@@ -21,14 +21,10 @@ jobs:
         with:
           name: jisantuc
           authToken: '${{ secrets.CACHIX_TOKEN }}'
-      - run: $(nix build .#containerImage.x86_64-linux) | podman load
+      - run: nix build .#containerImage.x86_64-linux
         env:
           ENV: ci
+      - name: Load container image
+        run: docker load < ./result
       - name: Push to registry
-        uses: redhat-actions/push-to-registry@v2
-        with:
-          image: jisantuc/schedule-2d-sat-sim
-          tag: latest
-          registry: ghcr.io/${{ github.repository_owner }}
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
+        run: docker push ghcr.io/jisantuc/schedule-2d-sat-sim:latest
