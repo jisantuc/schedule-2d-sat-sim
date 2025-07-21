@@ -25,7 +25,9 @@ jobs:
           authToken: '${{ secrets.CACHIX_TOKEN }}'
 
       - name: Log in to registry
-        run: echo $CR_PAT | docker login ghcr.io -u jisantuc --password-stdin
+        run: docker login ghcr.io -u jisantuc -p $CR_PAT
+        env:
+          CR_PAT: ${{ secrets.CR_PAT }}
 
       - run: nix build .#containerImage.x86_64-linux
         env:
