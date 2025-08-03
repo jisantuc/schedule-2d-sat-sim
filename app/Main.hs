@@ -1,7 +1,9 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
+import Control.Exception (bracket)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans.Reader (runReaderT)
 import Data.Text (Text)
@@ -11,7 +13,7 @@ import Database.Redis
     defaultConnectInfo,
     withCheckedConnect,
   )
-import Network.AMQP (openChannel, openConnection)
+import Network.AMQP (bindQueue, closeConnection, declareExchange, declareQueue, exchangeName, exchangeType, newExchange, newQueue, openChannel, openConnection, queueExclusive, queueName)
 import Options.Applicative
   ( Parser,
     auto,
@@ -27,7 +29,6 @@ import Options.Applicative
     metavar,
     option,
     progDesc,
-    short,
     str,
     value,
     (<**>),
@@ -38,10 +39,26 @@ import SatSim.Producer.AMQP (produceBatchesToExchange)
 import SatSim.Quantities (Seconds (..))
 import SatSim.Satellite (Satellite (..), SatelliteName (..))
 
+data RabbitMQConnectInfo = RabbitMQConnectInfo
+  { host :: String,
+    loginUser :: Text,
+    auth :: Text,
+    exchangeName' :: Text
+  }
+  deriving (Eq, Show)
+
 data Command
   = RunScheduler
-  | RabbitMQProducerDemo Text
-  | RabbitMQConsumerDemo ConnectInfo Text (Heartbeat IO)
+  | RabbitMQProducerDemo RabbitMQConnectInfo
+  | RabbitMQConsumerDemo ConnectInfo RabbitMQConnectInfo (Heartbeat IO)
+
+rabbitMQConnectInfoParser :: Parser RabbitMQConnectInfo
+rabbitMQConnectInfoParser =
+  RabbitMQConnectInfo
+    <$> option str (long "rabbitmq-host" <> value "localhost")
+    <*> option str (long "rabbitmq-login-user" <> value "guest")
+    <*> option str (long "rabbitmq-auth" <> value "guest")
+    <*> option str (long "rabbitmq-exchange-name" <> value "batches")
 
 redisConnectInfoParser :: Parser ConnectInfo
 redisConnectInfoParser =
@@ -73,13 +90,13 @@ heartbeatParser =
       )
 
 amqpProducerDemoParser :: Parser Command
-amqpProducerDemoParser = RabbitMQProducerDemo <$> option str (long "exchange-name" <> short 'x' <> metavar "EXCHANGE_NAME")
+amqpProducerDemoParser = RabbitMQProducerDemo <$> rabbitMQConnectInfoParser
 
 amqpConsumerDemoParser :: Parser Command
 amqpConsumerDemoParser =
   RabbitMQConsumerDemo
     <$> redisConnectInfoParser
-    <*> option str (long "exchange-name" <> short 'x' <> metavar "EXCHANGE_NAME")
+    <*> rabbitMQConnectInfoParser
     <*> heartbeatParser
 
 commandParser :: Parser Command
@@ -99,18 +116,31 @@ main = do
   cmd <- execParser (info commandParser idm)
   case cmd of
     RunScheduler -> print ("someday" :: String)
-    RabbitMQProducerDemo exchangeName -> do
-      conn <- openConnection "127.0.0.1" "/" "guest" "guest"
+    RabbitMQProducerDemo (RabbitMQConnectInfo {host, loginUser, auth, exchangeName'}) -> do
+      conn <- openConnection host "/" loginUser auth
       chan <- openChannel conn
-      produceBatchesToExchange chan 3 300 exchangeName
-    RabbitMQConsumerDemo connInfo exchangeName heartbeat ->
-      withCheckedConnect
-        connInfo
-        ( runReaderT
-            ( consumeBatchesFromExchange
-                (SimpleSatellite 3 (SatelliteName "satellite"))
-                exchangeName
-                heartbeat
-            )
-            . RedisScheduleRepository
+      produceBatchesToExchange chan 3 300 exchangeName'
+    RabbitMQConsumerDemo connInfo (RabbitMQConnectInfo {host, loginUser, auth, exchangeName'}) heartbeat ->
+      bracket
+        ( do
+            conn <- openConnection host "/" loginUser auth
+            chan <- openChannel conn
+            declareExchange chan (newExchange {exchangeName = exchangeName', exchangeType = "fanout"})
+            (queue, _, _) <- declareQueue chan (newQueue {queueName = "", queueExclusive = True})
+            bindQueue chan queue exchangeName' ""
+            pure (conn, chan, queue)
+        )
+        (\(conn, _, _) -> closeConnection conn)
+        ( \(_, chan, queue) ->
+            withCheckedConnect
+              connInfo
+              ( runReaderT
+                  ( consumeBatchesFromExchange
+                      (SimpleSatellite 3 (SatelliteName "satellite"))
+                      chan
+                      queue
+                      heartbeat
+                  )
+                  . RedisScheduleRepository
+              )
         )
