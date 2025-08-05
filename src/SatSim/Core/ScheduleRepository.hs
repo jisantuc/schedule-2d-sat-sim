@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-module SatSim.ScheduleRepository where
+module SatSim.Core.ScheduleRepository where
 
 import Control.Concurrent (modifyMVar_, takeMVar)
 import Control.Monad.IO.Class (MonadIO (liftIO))

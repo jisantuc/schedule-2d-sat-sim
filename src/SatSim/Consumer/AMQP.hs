@@ -24,7 +24,7 @@ import SatSim.Algo.Greedy (scheduleOn)
 import SatSim.Quantities (Seconds (..))
 import SatSim.Satellite (Satellite (..))
 import SatSim.Schedulable (Schedulable (..), ScheduleId (..))
-import SatSim.ScheduleRepository (ScheduleRepository (..))
+import SatSim.Core.ScheduleRepository (ScheduleRepository (..))
 import qualified Streamly.Data.Fold as Fold
 import qualified Streamly.Data.Stream as Stream
 import Streamly.Data.Stream.Prelude (maxThreads, parMergeBy)
@@ -40,6 +40,11 @@ beatForever (Heartbeat {unheartbeat, interval}) =
   Stream.repeatM $ unheartbeat *> liftIO (threadDelay . floor . unSeconds . (* 1000000) $ interval)
 
 -- TODO: BatchEventSource m? With instance for ReaderT (Channel, Text) m a?
+-- what's the API goal here? I don't want to know anything about m
+-- I _do_ want to be able to get a stream of [Schedulable] given a mystery m
+-- I don't want Channel/Text as argument types
+-- do I want ReaderT m (chan, queue) as the instance, and consumeBatches as bracketing
+--   that setup around consume?
 consumeBatchesFromExchange ::
   (ScheduleRepository m, MonadIO m, MonadCatch m, MonadBaseControl IO m) =>
   Satellite ->

@@ -18,12 +18,12 @@ library
     SatSim.Algo.Greedy
     SatSim.Cache
     SatSim.Consumer.AMQP
+    SatSim.Core.ScheduleRepository
     SatSim.Gen.Producer
     SatSim.Producer.AMQP
     SatSim.Quantities
     SatSim.Satellite
     SatSim.Schedulable
-    SatSim.ScheduleRepository
     SatSim.TargetVector
 
   build-depends:
