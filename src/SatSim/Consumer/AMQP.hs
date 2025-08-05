@@ -39,7 +39,7 @@ beatForever :: (MonadIO m) => Heartbeat m -> Stream.Stream m ()
 beatForever (Heartbeat {unheartbeat, interval}) =
   Stream.repeatM $ unheartbeat *> liftIO (threadDelay . floor . unSeconds . (* 1000000) $ interval)
 
--- TODO: BatchSource m? With instance for ReaderT (Channel, Text) m a?
+-- TODO: BatchEventSource m? With instance for ReaderT (Channel, Text) m a?
 consumeBatchesFromExchange ::
   (ScheduleRepository m, MonadIO m, MonadCatch m, MonadBaseControl IO m) =>
   Satellite ->
