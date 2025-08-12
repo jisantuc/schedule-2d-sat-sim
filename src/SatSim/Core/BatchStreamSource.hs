@@ -8,10 +8,12 @@ import Control.Monad.Trans.Reader (ReaderT)
 import SatSim.PubSub (RabbitMQConnectInfo, consumeBatches)
 import SatSim.Schedulable (Schedulable)
 import Streamly.Data.Stream (Stream)
+import Control.Monad.Catch (MonadCatch)
+import Control.Monad.IO.Class (MonadIO)
 
 class BatchStreamSource m where
   batches :: Stream m [Schedulable]
 
-instance BatchStreamSource (ReaderT RabbitMQConnectInfo IO)
+instance (MonadIO m, MonadCatch m) => BatchStreamSource (ReaderT RabbitMQConnectInfo m)
   where
   batches = consumeBatches

@@ -29,6 +29,8 @@ import Network.AMQP.Streamly (consume)
 import SatSim.Schedulable (Schedulable)
 import Streamly.Data.Stream (Stream)
 import qualified Streamly.Data.Stream as Stream
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Catch (MonadCatch)
 
 data RabbitMQConnectInfo = RabbitMQConnectInfo
   { host :: String,
@@ -38,7 +40,7 @@ data RabbitMQConnectInfo = RabbitMQConnectInfo
   }
   deriving (Eq, Show)
 
-consumeBatches :: Stream (ReaderT RabbitMQConnectInfo IO) [Schedulable]
+consumeBatches :: (MonadIO m, MonadCatch m) => Stream (ReaderT RabbitMQConnectInfo m) [Schedulable]
 consumeBatches =
   let release (_, _, conn) = closeConnection conn
       acquire host loginUser auth exchangeName' =
@@ -54,7 +56,7 @@ consumeBatches =
         Stream.finallyIO (ackEnv env) $
           case eitherDecode (msgBody msg) of
             Right batch -> Stream.fromPure batch
-            Left e -> Stream.liftInner (Stream.fromEffect (print e) $> [])
+            Left e -> Stream.liftInner (Stream.fromEffect (liftIO . print $ e) $> [])
       consumeBatch (chan, queue, _) = Stream.concatMap emitParsed (consume chan queue Ack)
    in Stream.concatMap
         ( \(RabbitMQConnectInfo {host, loginUser, auth, exchangeName'}) ->

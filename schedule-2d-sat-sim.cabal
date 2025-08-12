@@ -61,6 +61,7 @@ executable schedule-2d-sat-sim
   build-depends:
     , amqp
     , base                  ^>=4.19
+    , exceptions
     , hedis
     , optparse-applicative
     , schedule-2d-sat-sim
