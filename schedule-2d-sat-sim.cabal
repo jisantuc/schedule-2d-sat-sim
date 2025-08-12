@@ -79,9 +79,9 @@ test-suite schedule-2d-sat-sim-test
     SatSim.Algo.GreedySpec
     SatSim.CacheSpec
     SatSim.Consumer.AMQPSpec
+    SatSim.Core.ScheduleRepositorySpec
     SatSim.Gen.ProducerSpec
     SatSim.SchedulableSpec
-    SatSim.ScheduleRepositorySpec
     SatSim.TargetVectorSpec
     SatSim.TestLib
 
