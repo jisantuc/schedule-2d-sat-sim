@@ -18,12 +18,14 @@ library
     SatSim.Algo.Greedy
     SatSim.Cache
     SatSim.Consumer.AMQP
+    SatSim.Core.BatchStreamSource
+    SatSim.Core.ScheduleRepository
     SatSim.Gen.Producer
     SatSim.Producer.AMQP
+    SatSim.PubSub
     SatSim.Quantities
     SatSim.Satellite
     SatSim.Schedulable
-    SatSim.ScheduleRepository
     SatSim.TargetVector
 
   build-depends:
@@ -53,15 +55,17 @@ library
 executable schedule-2d-sat-sim
   import:           warnings
   main-is:          Main.hs
+  other-modules:    SatSim.Config
 
-  -- other-modules:
   -- other-extensions:
   build-depends:
     , amqp
     , base                  ^>=4.19
+    , exceptions
     , hedis
     , optparse-applicative
     , schedule-2d-sat-sim
+    , streamly-core
     , text
     , transformers
 
@@ -75,9 +79,9 @@ test-suite schedule-2d-sat-sim-test
     SatSim.Algo.GreedySpec
     SatSim.CacheSpec
     SatSim.Consumer.AMQPSpec
+    SatSim.Core.ScheduleRepositorySpec
     SatSim.Gen.ProducerSpec
     SatSim.SchedulableSpec
-    SatSim.ScheduleRepositorySpec
     SatSim.TargetVectorSpec
     SatSim.TestLib
 

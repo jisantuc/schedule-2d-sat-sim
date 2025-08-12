@@ -1,4 +1,4 @@
-module SatSim.ScheduleRepositorySpec where
+module SatSim.Core.ScheduleRepositorySpec where
 
 import Control.Concurrent (newMVar)
 import Control.Monad.Trans.Reader (runReaderT)
@@ -12,7 +12,7 @@ import SatSim.Cache (LocalScheduleRepository (..))
 import SatSim.Quantities (Radians (..))
 import SatSim.Satellite (Satellite (..), SatelliteName (..))
 import SatSim.Schedulable (Schedulable (..), ScheduleId (..))
-import SatSim.ScheduleRepository (readSchedule, writeSchedule)
+import SatSim.Core.ScheduleRepository (readSchedule, writeSchedule)
 import SatSim.TargetVector (mkTargetVector)
 import Test.Hspec (Spec, describe, it, shouldBe)
 

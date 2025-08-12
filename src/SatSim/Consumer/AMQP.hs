@@ -5,37 +5,19 @@
 module SatSim.Consumer.AMQP where
 
 import Control.Concurrent (threadDelay)
-import Control.Monad.Catch (MonadCatch)
+import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.Trans.Control (MonadBaseControl)
-import Data.Aeson (eitherDecode)
 import Data.IntervalIndex (allIntervals)
 import Data.Maybe (fromMaybe)
-import Data.Text (Text)
 import Data.These (These (..))
-import Network.AMQP
-  ( Ack (..),
-    ExchangeOpts (..),
-    Message (..),
-    QueueOpts (..),
-    ackEnv,
-    bindQueue,
-    closeConnection,
-    declareExchange,
-    declareQueue,
-    newExchange,
-    newQueue,
-    openChannel,
-    openConnection,
-  )
-import Network.AMQP.Streamly (consume)
 import SatSim.Algo.Greedy (scheduleOn)
+import SatSim.Core.BatchStreamSource (BatchStreamSource, batches)
+import SatSim.Core.ScheduleRepository (ScheduleRepository (..))
 import SatSim.Quantities (Seconds (..))
 import SatSim.Satellite (Satellite (..))
-import SatSim.Schedulable (Schedulable (..), ScheduleId (..))
-import SatSim.ScheduleRepository (ScheduleRepository (..))
+import SatSim.Schedulable (ScheduleId (..))
 import qualified Streamly.Data.Fold as Fold
-import Streamly.Data.Stream (finallyIO)
 import qualified Streamly.Data.Stream as Stream
 import Streamly.Data.Stream.Prelude (maxThreads, parMergeBy)
 
@@ -49,43 +31,30 @@ beatForever :: (MonadIO m) => Heartbeat m -> Stream.Stream m ()
 beatForever (Heartbeat {unheartbeat, interval}) =
   Stream.repeatM $ unheartbeat *> liftIO (threadDelay . floor . unSeconds . (* 1000000) $ interval)
 
-consumeBatchesFromExchange ::
-  (ScheduleRepository m, MonadIO m, MonadCatch m, MonadBaseControl IO m) =>
+consumeBatches ::
+  ( MonadBaseControl IO m,
+    BatchStreamSource m,
+    ScheduleRepository m,
+    MonadIO m,
+    MonadThrow m
+  ) =>
   Satellite ->
-  Text ->
   Heartbeat IO ->
   m ()
-consumeBatchesFromExchange satellite exchangeName' hb = do
-  (conn, chan, queue) <- liftIO $ do
-    conn <- openConnection "127.0.0.1" "/" "guest" "guest"
-    chan <- openChannel conn
-    declareExchange chan (newExchange {exchangeName = exchangeName', exchangeType = "fanout"})
-    (queue, _, _) <- declareQueue chan (newQueue {queueName = "", queueExclusive = True})
-    bindQueue chan queue exchangeName' ""
-    pure (conn, chan, queue)
-
-  let beat = beatForever . liftHeartbeat $ hb
-  let bracketed = finallyIO (closeConnection conn) (Stream.mapM callback $ consume chan queue Ack)
-  let heartbeatingConsumer = parMergeBy (maxThreads 4) (const . const $ EQ) beat bracketed
-  Stream.fold Fold.drain heartbeatingConsumer
-  where
-    callback (msg, envelope) =
-      let scheduleNewCandidates batch = do
-            schedule <- fromMaybe mempty <$> readSchedule (ScheduleId "schedule-key")
-            let newSchedule = scheduleOn satellite batch schedule
-            case newSchedule of
-              This _ -> liftIO $ putStrLn "nothing scheduled"
-              That sched -> do
-                liftIO $ print ("Schedule size: " <> (show . length . allIntervals) sched)
-                writeSchedule (ScheduleId "schedule-key") sched
-              These errs sched -> do
-                liftIO $ do
-                  print ("Schedule size: " <> (show . length . allIntervals) sched)
-                  print ("Num errors encountered: " <> (show . length) errs)
-                writeSchedule (ScheduleId "schedule-key") sched
-       in do
-            either
-              (liftIO . putStrLn)
-              scheduleNewCandidates
-              (eitherDecode (msgBody msg) :: Either String [Schedulable])
-            liftIO $ ackEnv envelope
+consumeBatches satellite heartbeat =
+  let scheduleBatch batch = do
+        schedule <- fromMaybe mempty <$> readSchedule (ScheduleId "schedule-key")
+        let newSchedule = scheduleOn satellite batch schedule
+        case newSchedule of
+          This _ -> liftIO $ putStrLn "nothing scheduled"
+          That sched -> do
+            liftIO $ print ("Schedule size: " <> (show . length . allIntervals) sched)
+            writeSchedule (ScheduleId "schedule-key") sched
+          These errs sched -> do
+            liftIO $ do
+              print ("Schedule size: " <> (show . length . allIntervals) sched)
+              print ("Num errors encountered: " <> (show . length) errs)
+            writeSchedule (ScheduleId "schedule-key") sched
+      beat = beatForever . liftHeartbeat $ heartbeat
+      beatingConsumer = parMergeBy (maxThreads 4) (const . const $ EQ) beat (Stream.mapM scheduleBatch batches)
+   in Stream.fold Fold.drain beatingConsumer
