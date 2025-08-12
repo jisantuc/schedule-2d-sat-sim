@@ -3,17 +3,18 @@
 
 module Main where
 
-import Control.Exception (bracket)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans.Reader (runReaderT)
-import Data.Text (Text)
 import Database.Redis
   ( ConnectInfo (..),
     PortID (..),
     defaultConnectInfo,
     withCheckedConnect,
   )
-import Network.AMQP (bindQueue, closeConnection, declareExchange, declareQueue, exchangeName, exchangeType, newExchange, newQueue, openChannel, openConnection, queueExclusive, queueName)
+import Network.AMQP
+  ( openChannel,
+    openConnection,
+  )
 import Options.Applicative
   ( Parser,
     auto,
@@ -34,18 +35,12 @@ import Options.Applicative
     (<**>),
   )
 import SatSim.Cache (RedisScheduleRepository (RedisScheduleRepository))
-import SatSim.Consumer.AMQP (Heartbeat (..), consumeBatchesFromExchange)
+import SatSim.Config (ConsumerConfig (ConsumerConfig))
+import SatSim.Consumer.AMQP (Heartbeat (..), consumeBatches)
 import SatSim.Producer.AMQP (produceBatchesToExchange)
+import SatSim.PubSub (RabbitMQConnectInfo (..))
 import SatSim.Quantities (Seconds (..))
 import SatSim.Satellite (Satellite (..), SatelliteName (..))
-
-data RabbitMQConnectInfo = RabbitMQConnectInfo
-  { host :: String,
-    loginUser :: Text,
-    auth :: Text,
-    exchangeName' :: Text
-  }
-  deriving (Eq, Show)
 
 data Command
   = RunScheduler
@@ -120,27 +115,14 @@ main = do
       conn <- openConnection host "/" loginUser auth
       chan <- openChannel conn
       produceBatchesToExchange chan 3 300 exchangeName'
-    RabbitMQConsumerDemo connInfo (RabbitMQConnectInfo {host, loginUser, auth, exchangeName'}) heartbeat ->
-      bracket
-        ( do
-            conn <- openConnection host "/" loginUser auth
-            chan <- openChannel conn
-            declareExchange chan (newExchange {exchangeName = exchangeName', exchangeType = "fanout"})
-            (queue, _, _) <- declareQueue chan (newQueue {queueName = "", queueExclusive = True})
-            bindQueue chan queue exchangeName' ""
-            pure (conn, chan, queue)
-        )
-        (\(conn, _, _) -> closeConnection conn)
-        ( \(_, chan, queue) ->
-            withCheckedConnect
-              connInfo
-              ( runReaderT
-                  ( consumeBatchesFromExchange
-                      (SimpleSatellite 3 (SatelliteName "satellite"))
-                      chan
-                      queue
-                      heartbeat
-                  )
-                  . RedisScheduleRepository
-              )
+    RabbitMQConsumerDemo connInfo rabbitMQConnectInfo heartbeat ->
+      withCheckedConnect
+        connInfo
+        ( runReaderT
+            ( consumeBatches
+                (SimpleSatellite 3 (SatelliteName "satellite"))
+                heartbeat
+            )
+            . ConsumerConfig rabbitMQConnectInfo
+            . RedisScheduleRepository
         )

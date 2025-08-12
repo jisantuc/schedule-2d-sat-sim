@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module SatSim.PubSub (consumeBatches, RabbitMQConnectInfo) where
+module SatSim.PubSub (consumeBatches, RabbitMQConnectInfo(..)) where
 
 import Control.Monad.Trans.Reader (ReaderT, ask)
 import Data.Aeson (eitherDecode)

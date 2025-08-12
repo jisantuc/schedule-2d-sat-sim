@@ -55,8 +55,8 @@ library
 executable schedule-2d-sat-sim
   import:           warnings
   main-is:          Main.hs
+  other-modules:    SatSim.Config
 
-  -- other-modules:
   -- other-extensions:
   build-depends:
     , amqp
@@ -64,6 +64,7 @@ executable schedule-2d-sat-sim
     , hedis
     , optparse-applicative
     , schedule-2d-sat-sim
+    , streamly-core
     , text
     , transformers
 
