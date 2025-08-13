@@ -37,7 +37,8 @@ jobs:
         if: ${{ always() }}
         with:
           target: cabal:schedule-2d-sat-sim-test
-          excludes: ${{ join([
+          excludes: |
+            ${{ join([
             SatSim.Algo.GreedySpec,
             SatSim.CacheSpec,
             SatSim.Core.ConsumerSpec,
