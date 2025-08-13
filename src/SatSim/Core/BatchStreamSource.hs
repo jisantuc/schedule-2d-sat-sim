@@ -4,22 +4,24 @@
 
 module SatSim.Core.BatchStreamSource where
 
-import Control.Monad.Trans.Reader (ReaderT, ask, Reader)
+import Control.Monad.Catch (MonadCatch)
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Trans.Reader (ReaderT, ask)
 import SatSim.PubSub (RabbitMQConnectInfo, consumeBatches)
 import SatSim.Schedulable (Schedulable)
 import Streamly.Data.Stream (Stream)
 import qualified Streamly.Data.Stream as Stream
-import Control.Monad.Catch (MonadCatch)
-import Control.Monad.IO.Class (MonadIO)
 
-newtype StaticBatchStream = StaticBatchStream { batchesToEmit :: [[Schedulable]] } deriving (Eq, Show)
+newtype StaticBatchStream = StaticBatchStream {batchesToEmit :: [[Schedulable]]} deriving (Eq, Show)
 
 class BatchStreamSource m where
   batches :: Stream m [Schedulable]
 
-instance (MonadIO m, MonadCatch m) => BatchStreamSource (ReaderT RabbitMQConnectInfo m)
-  where
+instance (MonadIO m, MonadCatch m) => BatchStreamSource (ReaderT RabbitMQConnectInfo m) where
   batches = consumeBatches
 
-instance BatchStreamSource (Reader StaticBatchStream) where
-  batches = Stream.concatMap (Stream.fromList . batchesToEmit) (Stream.fromEffect ask)
+instance BatchStreamSource (ReaderT StaticBatchStream IO) where
+  batches =
+    Stream.concatMap
+      (Stream.fromList . batchesToEmit)
+      (Stream.fromEffect ask)

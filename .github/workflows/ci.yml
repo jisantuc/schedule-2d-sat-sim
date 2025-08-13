@@ -39,10 +39,11 @@ jobs:
           excludes: |
             SatSim.Algo.GreedySpec,
             SatSim.CacheSpec,
-            SatSim.Gen.ProducerSpec
+            SatSim.Core.ConsumerSpec,
+            SatSim.Core.ScheduleRepositorySpec,
+            SatSim.Gen.ProducerSpec,
             SatSim.SchedulableSpec,
-            SatSim.TargetVectorSpec
-            SatSim.Consumer.AMQPSpec,
-            SatSim.Core.ScheduleRepositorySpec
+            SatSim.TargetVectorSpec,
+            SatSim.TestLib
       - name: Send coverage report
         uses: codecov/codecov-action@v5

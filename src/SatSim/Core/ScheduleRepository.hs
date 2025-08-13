@@ -30,6 +30,7 @@ instance (MonadIO m) => ScheduleRepository (ReaderT RedisScheduleRepository m) w
               liftIO $ Cache.writeSchedule redisRepository scheduleId schedule
           )
 
+-- TODO: add some debug logging to this instance to try to figure out why the mvar is empty
 instance (MonadIO m) => ScheduleRepository (ReaderT LocalScheduleRepository m) where
   readSchedule scheduleId =
     ask >>= \(LocalScheduleRepository {unMVar}) -> liftIO $ takeMVar unMVar <&> Map.lookup scheduleId

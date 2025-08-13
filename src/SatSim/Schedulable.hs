@@ -25,7 +25,7 @@ import GHC.Generics (Generic)
 import SatSim.Quantities (Radians (unRadians))
 import SatSim.TargetVector (TargetVector, angleBetween)
 
-newtype ScheduleId = ScheduleId String deriving (Eq, Ord)
+newtype ScheduleId = ScheduleId String deriving (Eq, Ord, Show)
 
 type Schedule = IntervalIndex UTCTime Scheduled
 

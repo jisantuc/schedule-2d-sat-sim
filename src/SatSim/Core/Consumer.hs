@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module SatSim.Consumer.AMQP where
+module SatSim.Core.Consumer where
 
 import Control.Concurrent (threadDelay)
 import Control.Monad.Catch (MonadThrow)
