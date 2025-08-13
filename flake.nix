@@ -21,6 +21,7 @@
             cabal-gild
             cabal-install
             haskell-language-server
+            hpc-codecov
             hlint
             ormolu
           ] ++ (with pkgs; [
