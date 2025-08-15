@@ -17,11 +17,11 @@ library
   exposed-modules:
     SatSim.Algo.Greedy
     SatSim.Cache
-    SatSim.Consumer.AMQP
     SatSim.Core.BatchStreamSource
+    SatSim.Core.Consumer
+    SatSim.Core.Producer
     SatSim.Core.ScheduleRepository
     SatSim.Gen.Producer
-    SatSim.Producer.AMQP
     SatSim.PubSub
     SatSim.Quantities
     SatSim.Satellite
@@ -78,7 +78,7 @@ test-suite schedule-2d-sat-sim-test
   other-modules:
     SatSim.Algo.GreedySpec
     SatSim.CacheSpec
-    SatSim.Consumer.AMQPSpec
+    SatSim.Core.ConsumerSpec
     SatSim.Core.ScheduleRepositorySpec
     SatSim.Gen.ProducerSpec
     SatSim.SchedulableSpec

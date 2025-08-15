@@ -21,6 +21,7 @@
             cabal-gild
             cabal-install
             haskell-language-server
+            hpc-codecov
             hlint
             ormolu
           ] ++ (with pkgs; [
@@ -39,6 +40,7 @@
             packages = ps: [ (ps.callCabal2nix "schedule-2d-sat-sim" ./. { }) ];
             nativeBuildInputs = with haskellPackages; [
               cabal-install
+              hpc-codecov
             ];
           };
 

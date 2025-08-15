@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
 cabal test --test-show-details=direct "$@" --enable-coverage
+hpc-codecov cabal:schedule-2d-sat-sim-test -o codecov.json

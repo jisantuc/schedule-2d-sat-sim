@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module SatSim.Producer.AMQP where
+module SatSim.Core.Producer where
 
 import Control.Concurrent (threadDelay)
 import Control.Monad (forever, void)

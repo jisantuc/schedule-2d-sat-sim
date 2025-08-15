@@ -32,17 +32,6 @@ jobs:
         env:
           ENV: ci
       - run: nix build
-      - name: Generate coverage report
-        uses: 8c6794b6/hpc-codecov-action@v4
-        with:
-          target: cabal:schedule-2d-sat-sim-test
-          excludes: |
-            SatSim.Algo.GreedySpec,
-            SatSim.CacheSpec,
-            SatSim.Gen.ProducerSpec
-            SatSim.SchedulableSpec,
-            SatSim.TargetVectorSpec
-            SatSim.Consumer.AMQPSpec,
-            SatSim.Core.ScheduleRepositorySpec
       - name: Send coverage report
         uses: codecov/codecov-action@v5
+        if: ${{ always() }}
