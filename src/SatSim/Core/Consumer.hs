@@ -56,5 +56,10 @@ consumeBatches satellite heartbeat =
               print ("Num errors encountered: " <> (show . length) errs)
             writeSchedule (ScheduleId "schedule-key") sched
       beat = beatForever . liftHeartbeat $ heartbeat
-      beatingConsumer = parMergeBy (maxThreads 4) (const . const $ EQ) beat (Stream.mapM scheduleBatch batches)
+      -- this is weirdly sensitive to the merge order in tests. However, running the
+      -- program for real, the consumer does fine. I think this has something to do with
+      -- multithreading options and the MVar, but I haven't figured out what.
+      -- The non-test executable does fine running the heartbeat and consumer next to
+      -- each other.
+      beatingConsumer = parMergeBy (maxThreads 4) (const . const $ EQ) (Stream.mapM scheduleBatch batches) beat
    in Stream.fold Fold.drain beatingConsumer

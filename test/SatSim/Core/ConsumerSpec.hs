@@ -56,12 +56,7 @@ spec = describe "ConsumerSpec" $ do
                 (consumeBatches satellite (Heartbeat hb 20))
                 testConsumerConfig
             )
-            (threadDelay 3000000)
-        check <- takeMVar mvar
-        -- TODO: oh no the mvar is empty wtf
-        print "Check ============="
-        print check
-        putMVar mvar check
+            (threadDelay 1000000)
         result <- runReaderT (readSchedule (ScheduleId "schedule-key")) testConsumerConfig
         result
           `shouldBe` justThat

@@ -3,7 +3,7 @@
 
 module SatSim.Core.ScheduleRepository where
 
-import Control.Concurrent (modifyMVar_, takeMVar)
+import Control.Concurrent (modifyMVar_, readMVar)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.Trans.Reader (ReaderT (..), ask)
 import Data.Functor ((<&>))
@@ -30,9 +30,12 @@ instance (MonadIO m) => ScheduleRepository (ReaderT RedisScheduleRepository m) w
               liftIO $ Cache.writeSchedule redisRepository scheduleId schedule
           )
 
--- TODO: add some debug logging to this instance to try to figure out why the mvar is empty
 instance (MonadIO m) => ScheduleRepository (ReaderT LocalScheduleRepository m) where
   readSchedule scheduleId =
-    ask >>= \(LocalScheduleRepository {unMVar}) -> liftIO $ takeMVar unMVar <&> Map.lookup scheduleId
+    ask >>= \(LocalScheduleRepository {unMVar}) ->
+      liftIO $ readMVar unMVar <&> Map.lookup scheduleId
   writeSchedule scheduleId schedule =
-    ask >>= (\(LocalScheduleRepository {unMVar}) -> liftIO $ modifyMVar_ unMVar (pure . Map.insert scheduleId schedule))
+    ask
+      >>= ( \(LocalScheduleRepository {unMVar}) ->
+              liftIO $ modifyMVar_ unMVar (pure . Map.insert scheduleId schedule)
+          )
