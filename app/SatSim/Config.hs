@@ -19,6 +19,7 @@ data ConsumerConfig = ConsumerConfig { rabbitMQConnectInfo :: RabbitMQConnectInf
 instance (MonadIO m) => HasLog ConsumerConfig msg m where
   -- TODO: do I have useful context here? I don't think so. Maybe the time?
   -- some info that the log is definitely from the consumer? I don't know.
+  -- see https://kowainik.github.io/posts/2018-09-25-co-log for examples
   getLogAction _ = LogAction (\_ -> liftIO $ putStr "oh no")
   setLogAction _ conf = conf
 
