@@ -20,6 +20,11 @@ import SatSim.Schedulable (ScheduleId (..))
 import qualified Streamly.Data.Fold as Fold
 import qualified Streamly.Data.Stream as Stream
 import Streamly.Data.Stream.Prelude (maxThreads, parMergeBy)
+import Colog (LogAction(LogAction), logMsg, HasLog)
+import Control.Monad.Reader (MonadReader)
+
+logStringStdout :: LogAction IO String
+logStringStdout = LogAction putStrLn
 
 data Heartbeat m = Heartbeat {unheartbeat :: m (), interval :: Seconds}
 
@@ -32,7 +37,9 @@ beatForever (Heartbeat {unheartbeat, interval}) =
   Stream.repeatM $ unheartbeat *> liftIO (threadDelay . floor . unSeconds . (* 1000000) $ interval)
 
 consumeBatches ::
-  ( MonadBaseControl IO m,
+  ( MonadReader env m,
+  HasLog env String m,
+    MonadBaseControl IO m,
     BatchStreamSource m,
     ScheduleRepository m,
     MonadIO m,
@@ -48,7 +55,9 @@ consumeBatches satellite heartbeat =
         case newSchedule of
           This _ -> liftIO $ putStrLn "nothing scheduled"
           That sched -> do
-            liftIO $ print ("Schedule size: " <> (show . length . allIntervals) sched)
+            -- TODO: with the instance that prints "oh no", I get "oh no" in front of
+            -- the message. That's not great!
+            logMsg ("Schedule size: " <> (show . length . allIntervals) sched)
             writeSchedule (ScheduleId "schedule-key") sched
           These errs sched -> do
             liftIO $ do

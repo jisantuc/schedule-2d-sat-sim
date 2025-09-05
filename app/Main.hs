@@ -35,7 +35,7 @@ import Options.Applicative
     (<**>),
   )
 import SatSim.Cache (RedisScheduleRepository (RedisScheduleRepository))
-import SatSim.Config (ConsumerConfig (ConsumerConfig))
+import SatSim.Config (ConsumerConfig (..))
 import SatSim.Core.Consumer (Heartbeat (..), consumeBatches)
 import SatSim.Core.Producer (produceBatchesToExchange)
 import SatSim.PubSub (RabbitMQConnectInfo (..))

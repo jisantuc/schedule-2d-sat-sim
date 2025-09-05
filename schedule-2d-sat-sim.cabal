@@ -34,11 +34,13 @@ library
     , amqp-streamly
     , base            ^>=4.19
     , bytestring
+    , co-log
     , containers
     , exceptions
     , hedis
     , interval-index
     , monad-control
+    , mtl
     , random
     , semigroupoids
     , streamly
@@ -61,6 +63,7 @@ executable schedule-2d-sat-sim
   build-depends:
     , amqp
     , base                  ^>=4.19
+    , co-log
     , exceptions
     , hedis
     , optparse-applicative
